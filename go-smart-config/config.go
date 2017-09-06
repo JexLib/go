@@ -22,7 +22,8 @@ var (
 	// type Config struct {
 	//     Foo string    `flag:"...Foo 字段的命令行选项属性..."`
 	// }
-	StructTagKey string = "flag"
+	StructFlagTagKey string = "flag" 
+	StructEnvTagKey  string = "env"
 )
 
 var (
@@ -98,7 +99,7 @@ type FlagSpec struct {
 }
 
 func addFlags(flags *pflag.FlagSet, config interface{}) {
-	list := getList("", reflect.TypeOf(config), "")
+	list := getList("", reflect.TypeOf(config), "", "")
 	used := make(map[string]string, 32)
 	for _, v := range list {
 		help := v.HelpMessage
@@ -192,7 +193,7 @@ func addFlags(flags *pflag.FlagSet, config interface{}) {
 	}
 }
 
-func getList(prefix string, t reflect.Type, tag string) (result []FlagSpec) {
+func getList(prefix string, t reflect.Type, tag_flag, tag_env string) (result []FlagSpec) {
 	result = make([]FlagSpec, 0)
 
 	if t == reflect.TypeOf(time.Second) {
@@ -201,16 +202,17 @@ func getList(prefix string, t reflect.Type, tag string) (result []FlagSpec) {
 
 	switch t.Kind() {
 	case reflect.Ptr:
-		result = getList(prefix, t.Elem(), tag)
+		result = getList(prefix, t.Elem(), tag_flag, tag_env)
 	case reflect.Struct:
 		for i := 0; i < t.NumField(); i += 1 {
-			tag := t.Field(i).Tag.Get(StructTagKey)
+			tag_flag := t.Field(i).Tag.Get(StructFlagTagKey)
+			tag_env := t.Field(i).Tag.Get(StructEnvTagKey)
 			name := prefix
 			if name != "" {
 				name += "."
 			}
 			name += strings.ToLower(t.Field(i).Name)
-			result = append(result, getList(name, t.Field(i).Type, tag)...)
+			result = append(result, getList(name, t.Field(i).Type, tag_flag, tag_env)...)
 		}
 	case reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64:
 		fallthrough
@@ -222,11 +224,17 @@ func getList(prefix string, t reflect.Type, tag string) (result []FlagSpec) {
 	}
 
 end:
-	if tag == "" {
+	if tag_flag == "" && tag_env == "" {
 		return
 	}
 
-	parts := strings.SplitN(tag, "|", 3)
+	parts := strings.SplitN(tag_flag, "|", 3)
+	if tag_env != "" {
+		if value := os.Getenv(tag_env); value != "" {
+			parts[1] = value
+		}
+	}
+
 	result = append(result, FlagSpec{
 		Type:        t,
 		Name:        prefix,
