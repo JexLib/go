@@ -6,7 +6,7 @@ import (
 	"fmt"
 	"time"
 
-	smartConfig "github.com/JexLib/go/go-smart-config"
+	smartConfig "github.com/JexLib/golang/config"
 )
 
 func main() {

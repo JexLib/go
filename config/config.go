@@ -1,4 +1,4 @@
-package smartConfig
+package config
 
 import (
 	"bytes"
