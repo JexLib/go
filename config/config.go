@@ -26,6 +26,7 @@ var (
 	// }
 	StructTagKey_flag string = "flag"
 	StructTagKey_env  string = "env"
+	// StructTagKey_mix  string = "mix" //混淆密码等特殊数据
 )
 
 var (

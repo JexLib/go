@@ -1,6 +1,7 @@
 package jexweb
 
 import (
+	"fmt"
 	"html/template"
 	"reflect"
 
@@ -10,6 +11,23 @@ import (
 	"github.com/xyproto/permissionbolt"
 	"whjinju.com/golibs/JexWeb/session"
 	jex_middleware "whjinju.com/golibs/jexweb/middleware"
+)
+
+const (
+	banner_jex = `
+       _________  __
+      / / ____/ |/ /
+ __  / / __/  |   /
+/ /_/ / /___ /   |
+\____/_____//_/|_|  
+`
+	banner_jexweb = `
+       _________  __              __
+      / / ____/ |/ /      _____  / /_
+ __  / / __/  |   / | /| / / _ \/ __ \
+/ /_/ / /___ /   || |/ |/ /  __/ /_/ /
+\____/_____//_/|_||__/|__/\___/_.___/
+`
 )
 
 type (
@@ -43,7 +61,6 @@ func NewWeb(config Config) *JexWeb {
 		_denyFunction: permissionDenied,
 		//	controllers:        make(map[string]iController),
 	}
-
 	jwb.Echo.Use(middleware.Recover())
 
 	jwb.Echo.Use(middleware.Logger())
@@ -237,6 +254,8 @@ func (jwb *JexWeb) Start() {
 	jwb.Echo.Binder = &binder{}
 	jwb.Echo.Static("assets", jwb.Config.AssetsDir)
 	jwb.Echo.Static("public", jwb.Config.PublicDir)
-
+	jwb.Echo.HideBanner = true
+	fmt.Println(banner_jexweb)
+	fmt.Println("JexWeb server listening at:", jwb.Config.Address)
 	jwb.Echo.Start(jwb.Config.Address)
 }
