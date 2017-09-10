@@ -5,12 +5,12 @@ import (
 	"html/template"
 	"reflect"
 
+	jex_middleware "github.com/JexLib/golang/JexWeb/middleware"
+	"github.com/JexLib/golang/JexWeb/session"
 	"github.com/labstack/echo"
 	"github.com/labstack/echo/middleware"
 	"github.com/unrolled/render"
 	"github.com/xyproto/permissionbolt"
-	"whjinju.com/golibs/JexWeb/session"
-	jex_middleware "whjinju.com/golibs/jexweb/middleware"
 )
 
 const (
