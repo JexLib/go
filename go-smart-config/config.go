@@ -1,8 +1,10 @@
 package smartConfig
 
 import (
+	"bytes"
 	"encoding/json"
 	"fmt"
+	"io/ioutil"
 	"log"
 	"os"
 	"reflect"
@@ -22,8 +24,8 @@ var (
 	// type Config struct {
 	//     Foo string    `flag:"...Foo 字段的命令行选项属性..."`
 	// }
-	StructFlagTagKey string = "flag" 
-	StructEnvTagKey  string = "env"
+	StructTagKey_flag string = "flag"
+	StructTagKey_env  string = "env"
 )
 
 var (
@@ -61,8 +63,8 @@ func LoadConfig(name string, version string, config interface{}) {
 	optVersion := flags.Bool("version", false, "just print version number only")
 	optHelp := flags.Bool("help", false, "show this message")
 
-	optWriteYAML := flags.Bool("gen-yaml", false, "generate config.yaml")
-	optWriteJSON := flags.Bool("gen-json", false, "generate config.json")
+	optWriteYAML := flags.Bool("gen-yaml", false, "generate config.example.yaml")
+	optWriteJSON := flags.Bool("gen-json", false, "generate config.example.json")
 
 	addFlags(flags, config)
 
@@ -75,17 +77,20 @@ func LoadConfig(name string, version string, config interface{}) {
 		fmt.Fprintf(os.Stderr, "%s\n", version)
 		os.Exit(0)
 	} else if *optWriteYAML {
-		out, err := yaml.Marshal(config)
-		if err != nil {
-			fmt.Fprintf(os.Stderr, "error: %s\n", err)
-		} else {
-			fmt.Fprintf(os.Stdout, "%s", out)
-		}
+		// out, err := yaml.Marshal(config)
+		// if err != nil {
+		// 	fmt.Fprintf(os.Stderr, "error: %s\n", err)
+		// } else {
+		// 	//fmt.Fprintf(os.Stdout, "%s", out)
+		// 	createExampleConfigFile(config, "yaml")
+		// }
+		gen_ConfigFile(config, "yaml")
 		os.Exit(0)
 	} else if *optWriteJSON {
-		encoder := json.NewEncoder(os.Stdout)
-		encoder.SetIndent("", "    ")
-		encoder.Encode(config)
+		// encoder := json.NewEncoder(os.Stdout)
+		// encoder.SetIndent("", "    ")
+		// encoder.Encode(config)
+		gen_ConfigFile(config, "json")
 		os.Exit(0)
 	}
 }
@@ -205,8 +210,8 @@ func getList(prefix string, t reflect.Type, tag_flag, tag_env string) (result []
 		result = getList(prefix, t.Elem(), tag_flag, tag_env)
 	case reflect.Struct:
 		for i := 0; i < t.NumField(); i += 1 {
-			tag_flag := t.Field(i).Tag.Get(StructFlagTagKey)
-			tag_env := t.Field(i).Tag.Get(StructEnvTagKey)
+			tag_flag := t.Field(i).Tag.Get(StructTagKey_flag)
+			tag_env := t.Field(i).Tag.Get(StructTagKey_env)
 			name := prefix
 			if name != "" {
 				name += "."
@@ -281,4 +286,33 @@ func noticeChanged(config interface{}) {
 
 func ConfigChanged() <-chan interface{} {
 	return configMonitor
+}
+
+/**
+ configType:yaml,json
+**/
+func gen_ConfigFile(config interface{}, configType ...string) {
+	if len(configType) == 0 {
+		configType = append(configType, "json")
+	}
+	switch configType[0] {
+	case "yaml":
+		out, err := yaml.Marshal(config)
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "error: %s\n", err)
+			return
+		}
+		ioutil.WriteFile("./config.example.yaml", out, 0666)
+		fmt.Println("generate ./config.example.yaml succeed:\n", string(out))
+	case "json":
+		out, err := json.Marshal(config)
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "error: %s\n", err)
+		}
+		var fmtout bytes.Buffer
+		json.Indent(&fmtout, out, "", "\t")
+		ioutil.WriteFile("./config.example.json", fmtout.Bytes(), 0666)
+		fmt.Println("generate ./config.example.json succeed:\n", fmtout.String())
+	}
+
 }
