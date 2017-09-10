@@ -1,6 +1,6 @@
 package jexweb
 
-Config struct {
+type Config struct { 
 	Address       string `flag:"|:8080|http listening Address"`
 	AssetsDir     string `flag:"|public/assets|website Assets storage path"`
 	PublicDir     string `flag:"|public|website Public storage path"`
