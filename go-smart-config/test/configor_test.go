@@ -37,11 +37,10 @@ func main() {
 	}
 
 	Config := MainConfig{}
+	//创建配置文件样本
+	//smartConfig.CreateExampleConfigFile(&Config)
+	//读取配置
 	smartConfig.LoadConfig("example.yml", "1.0", &Config)
-
-	//fmt.Printf("config: %#v\n", Config)
-	// config.Load(&Config, "config.yml")
-	// config.Flag(&Config)
 
 	if str, err := json.Marshal(&Config); err == nil {
 		var out bytes.Buffer
@@ -49,4 +48,13 @@ func main() {
 		fmt.Println("sss:", out.String())
 	}
 
+	for {
+		select {
+		case <-smartConfig.ConfigChanged():
+			// 监测到配置文件修改
+			fmt.Printf("new config: %#v\n", Config)
+		default:
+			time.Sleep(1 * time.Second)
+		}
+	}
 }
