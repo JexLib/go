@@ -1,7 +1,6 @@
 package jexweb
 
 import (
-	"fmt"
 	"html/template"
 	"reflect"
 
@@ -15,7 +14,7 @@ import (
 
 type (
 	JexWeb struct {
-		Config        *Config
+		Config        Config
 		Echo          *echo.Echo
 		Perm          *permissionbolt.Permissions
 		_denyFunction echo.HandlerFunc
@@ -37,16 +36,14 @@ type (
 	HandlerFunc func() error
 )
 
-func NewWeb(config ...map[string]interface{}) *JexWeb {
+func NewWeb(config Config) *JexWeb {
 	jwb := &JexWeb{
-		Config:        newConfig(config...),
+		Config:        config,
 		Echo:          echo.New(),
 		_denyFunction: permissionDenied,
 		//	controllers:        make(map[string]iController),
 	}
-	if er := jwb.Config.loadConfig("webCnf"); er != nil {
-		fmt.Println(er)
-	}
+
 	jwb.Echo.Use(middleware.Recover())
 
 	jwb.Echo.Use(middleware.Logger())
@@ -215,10 +212,10 @@ func (g *Group) Match(methods []string, path string, handlerFuncName string, m .
 
 func (jwb *JexWeb) Start() {
 	_Render := render.New(render.Options{
-		Directory:                 jwb.Config.Web.TemplateDir,
+		Directory:                 jwb.Config.TemplateDir,
 		Asset:                     nil,
 		AssetNames:                nil,
-		Layout:                    jwb.Config.Web.AppLayout,
+		Layout:                    jwb.Config.AppLayout,
 		Extensions:                []string{".html", ".tmpl"},
 		Funcs:                     []template.FuncMap{_helperFuncs, _ExtendFuncs},
 		Delims:                    render.Delims{"{{", "}}"},
@@ -238,8 +235,8 @@ func (jwb *JexWeb) Start() {
 	jwb.Echo.Renderer = r
 
 	jwb.Echo.Binder = &binder{}
-	jwb.Echo.Static("assets", jwb.Config.Web.AssetsDir)
-	jwb.Echo.Static("public", jwb.Config.Web.PublicDir)
+	jwb.Echo.Static("assets", jwb.Config.AssetsDir)
+	jwb.Echo.Static("public", jwb.Config.PublicDir)
 
-	jwb.Echo.Start(jwb.Config.Web.Address)
+	jwb.Echo.Start(jwb.Config.Address)
 }
