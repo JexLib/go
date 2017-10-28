@@ -1,7 +1,12 @@
 package jexweb
 
-type Config struct { 
-	Address       string `flag:"|:8080|http listening Address"`
+type Config struct {
+	Addr  string `flag:"||http listening Address"`
+	Https struct {
+		Enabled bool `flag:"|false|Enabled   https"`
+		Port    int  `flag:"|443|https port"`
+	}
+	HttpPort      int    `flag:"|8080|http port"`
 	AssetsDir     string `flag:"|public/assets|website Assets storage path"`
 	PublicDir     string `flag:"|public|website Public storage path"`
 	TemplateDir   string `flag:"|templates|website Templates storage path"`

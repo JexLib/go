@@ -317,3 +317,13 @@ func gen_ConfigFile(config interface{}, configType ...string) {
 	}
 
 }
+
+func Println(config interface{}) {
+	var fmtout bytes.Buffer
+	out, err := json.Marshal(config)
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "error: %s\n", err)
+	}
+	json.Indent(&fmtout, out, "", "\t")
+	fmt.Println(fmtout.String())
+}

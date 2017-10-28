@@ -5,6 +5,8 @@ import (
 	"html/template"
 	"reflect"
 
+	"golang.org/x/crypto/acme/autocert"
+
 	jex_middleware "github.com/JexLib/golang/JexWeb/middleware"
 	"github.com/JexLib/golang/JexWeb/session"
 	"github.com/labstack/echo"
@@ -54,7 +56,7 @@ type (
 	HandlerFunc func() error
 )
 
-func NewWeb(config Config) *JexWeb {
+func New(config Config) *JexWeb {
 	jwb := &JexWeb{
 		Config:        config,
 		Echo:          echo.New(),
@@ -63,7 +65,11 @@ func NewWeb(config Config) *JexWeb {
 	}
 	jwb.Echo.Use(middleware.Recover())
 
-	jwb.Echo.Use(middleware.Logger())
+	// jwb.Echo.Use(middleware.Logger())
+	jwb.Echo.Use(middleware.LoggerWithConfig(middleware.LoggerConfig{
+		Format: "method=${method}, uri=${uri}, status=${status}\n",
+	}))
+
 	jwb.Perm, _ = permissionbolt.NewWithConf("permdb")
 	jwb.Perm.UserState().SetCookieTimeout(60 * 60)
 	store := session.NewFileSystemStoreStore("store")
@@ -256,6 +262,15 @@ func (jwb *JexWeb) Start() {
 	jwb.Echo.Static("public", jwb.Config.PublicDir)
 	jwb.Echo.HideBanner = true
 	fmt.Println(banner_jexweb)
-	fmt.Println("JexWeb server listening at:", jwb.Config.Address)
-	jwb.Echo.Start(jwb.Config.Address)
+	if jwb.Config.Https.Enabled {
+		jwb.Echo.Pre(middleware.HTTPSRedirect())
+		jwb.Echo.AutoTLSManager.Cache = autocert.DirCache("./.cache")
+		address := fmt.Sprintf("%s:%d", jwb.Config.Addr, jwb.Config.Https.Port)
+		fmt.Println("Starting JexWeb listening at", address)
+		jwb.Echo.Logger.Fatal(jwb.Echo.StartAutoTLS(address))
+	} else {
+		address := fmt.Sprintf("%s:%d", jwb.Config.Addr, jwb.Config.HttpPort)
+		fmt.Println("Starting JexWeb listening at", address)
+		jwb.Echo.Logger.Fatal(jwb.Echo.Start(address))
+	}
 }
