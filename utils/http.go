@@ -22,6 +22,7 @@ func HttpGetJson(url string, v interface{}) error {
 		return err
 	}
 
+	fmt.Println(string(body))
 	err = json.Unmarshal(body, v) // JSON to Struct
 	if err != nil {
 		fmt.Println(err)

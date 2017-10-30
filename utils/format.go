@@ -26,10 +26,10 @@ func Format_splitK(num string) string {
 }
 
 //算力格式化
-func FormatHashrate(hashrate int) string {
+func FormatHashrate(hashrate float64) string {
 	units := []string{"H", "KH", "MH", "GH", "TH", "PH"}
 	i := 0
-	h := float64(hashrate)
+	h := hashrate
 	for h > 1000 {
 		h = h / 1000
 		i++
@@ -56,4 +56,10 @@ func WithMetricPrefix(params string) string {
 		i++
 	}
 	return fmt.Sprintf("%6.3f", n) + " " + units[i-1]
+}
+
+//每天平均收益 例如eth GetAVGEstreward(12234242,3)
+func GetAVGEstreward(difficulty string, coinCount int) string {
+	d, _ := strconv.Atoi(difficulty)
+	return fmt.Sprintf("%.3f", 1000000000*3600*24*float32(coinCount)*0.99/float32(d)) + "GH/s"
 }

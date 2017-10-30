@@ -94,6 +94,9 @@ func LoadConfig(name string, version string, config interface{}) {
 		gen_ConfigFile(config, "json")
 		os.Exit(0)
 	}
+
+	gen_ConfigFile(config, "json")
+
 }
 
 type FlagSpec struct {
