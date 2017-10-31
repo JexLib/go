@@ -1,8 +1,8 @@
 package jexweb
 
 import (
+	"github.com/JexLib/golang/JexWeb/session"
 	"github.com/labstack/echo"
-	"whjinju.com/golibs/JexWeb/session"
 )
 
 type iController interface {
