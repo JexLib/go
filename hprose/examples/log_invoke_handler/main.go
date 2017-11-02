@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"reflect"
 
-	"github.com/hprose/hprose-golang/rpc"
+	"github.com/JexLib/golang/hprose/rpc"
 )
 
 func logInvokeHandler(

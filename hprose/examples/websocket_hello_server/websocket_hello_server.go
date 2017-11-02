@@ -3,7 +3,7 @@ package main
 import (
 	"net/http"
 
-	rpc "github.com/hprose/hprose-golang/rpc/websocket"
+	rpc "github.com/JexLib/golang/hprose/rpc/websocket"
 )
 
 func hello(name string) string {

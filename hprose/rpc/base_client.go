@@ -34,8 +34,8 @@ import (
 	"sync/atomic"
 	"time"
 
-	hio "github.com/hprose/hprose-golang/io"
-	"github.com/hprose/hprose-golang/util"
+	hio "github.com/JexLib/golang/hprose/io"
+	"github.com/JexLib/golang/hprose/util"
 )
 
 type clientTopic struct {
@@ -904,7 +904,7 @@ func (client *BaseClient) Subscribe(
 		settings = new(InvokeSettings)
 	}
 	if settings.Timeout <= 0 {
-		settings.Timeout = 5 * time.Minute;
+		settings.Timeout = 5 * time.Minute
 	}
 	settings.ByRef = false
 	settings.Idempotent = true

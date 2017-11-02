@@ -27,8 +27,8 @@ import (
 	"sync"
 	"time"
 
-	"github.com/hprose/hprose-golang/io"
-	"github.com/hprose/hprose-golang/util"
+	"github.com/JexLib/golang/hprose/io"
+	"github.com/JexLib/golang/hprose/util"
 )
 
 // BaseService is the hprose base service
@@ -594,7 +594,7 @@ func (service *BaseService) Publish(
 			t.put(id, message)
 			fireSubscribeEvent(topic, id, service)
 		}
-		receiveMessage:
+	receiveMessage:
 		select {
 		case result := <-message:
 			if result == heartbeatSignals {
@@ -605,7 +605,7 @@ func (service *BaseService) Publish(
 			go func() {
 				select {
 				case message <- heartbeatSignals:
-					break;
+					break
 				case <-time.After(t.heartbeat):
 					service.offline(t, topic, id)
 				}

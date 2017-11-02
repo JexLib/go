@@ -24,7 +24,7 @@ import (
 	"reflect"
 	"strconv"
 
-	"github.com/hprose/hprose-golang/util"
+	"github.com/JexLib/golang/hprose/util"
 )
 
 func readBoolFalse(r *Reader) bool {

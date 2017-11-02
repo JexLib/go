@@ -25,7 +25,7 @@ import (
 	"sync"
 	"unsafe"
 
-	"github.com/hprose/hprose-golang/util"
+	"github.com/JexLib/golang/hprose/util"
 )
 
 type fieldCache struct {

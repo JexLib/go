@@ -26,7 +26,7 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/hprose/hprose-golang/util"
+	"github.com/JexLib/golang/hprose/util"
 )
 
 func readLongAsFloat64(r *Reader) float64 {

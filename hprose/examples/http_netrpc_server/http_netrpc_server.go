@@ -4,7 +4,7 @@ import (
 	"errors"
 	"net/http"
 
-	"github.com/hprose/hprose-golang/rpc"
+	"github.com/JexLib/golang/hprose/rpc"
 )
 
 // Args ...

@@ -1,8 +1,8 @@
 package main
 
 import (
+	"github.com/JexLib/golang/hprose/rpc"
 	"github.com/astaxie/beego"
-	"github.com/hprose/hprose-golang/rpc"
 )
 
 func hello(name string) string {

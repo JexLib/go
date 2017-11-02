@@ -4,8 +4,8 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/hprose/hprose-golang/io"
-	"github.com/hprose/hprose-golang/util"
+	"github.com/JexLib/golang/hprose/io"
+	"github.com/JexLib/golang/hprose/util"
 )
 
 func mySliceEncoder(w *io.Writer, v interface{}) {

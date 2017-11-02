@@ -3,7 +3,7 @@ package main
 import (
 	"fmt"
 
-	"github.com/hprose/hprose-golang/rpc"
+	"github.com/JexLib/golang/hprose/rpc"
 )
 
 // SizeFilter ...

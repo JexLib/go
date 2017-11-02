@@ -7,7 +7,7 @@ import (
 	"runtime"
 	"testing"
 
-	hproserpc "github.com/hprose/hprose-golang/rpc"
+	hproserpc "github.com/JexLib/golang/hprose/rpc"
 )
 
 // BenchmarkParallelHprose2 is ...

@@ -5,8 +5,8 @@ import (
 
 	"io/ioutil"
 
-	"github.com/hprose/hprose-golang/io"
-	"github.com/hprose/hprose-golang/rpc"
+	"github.com/JexLib/golang/hprose/io"
+	"github.com/JexLib/golang/hprose/rpc"
 )
 
 // CompressFilter ...

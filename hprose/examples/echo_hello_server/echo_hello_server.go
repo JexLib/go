@@ -1,7 +1,7 @@
 package main
 
 import (
-	"github.com/hprose/hprose-golang/rpc"
+	"github.com/JexLib/golang/hprose/rpc"
 	"github.com/labstack/echo"
 )
 

@@ -5,7 +5,7 @@ import (
 	"sync/atomic"
 	"time"
 
-	rpc "github.com/hprose/hprose-golang/rpc/fasthttp"
+	rpc "github.com/JexLib/golang/hprose/rpc/fasthttp"
 )
 
 // Stub is ...

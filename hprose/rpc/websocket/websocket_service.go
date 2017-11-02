@@ -25,9 +25,9 @@ import (
 	"strings"
 	"sync"
 
+	"github.com/JexLib/golang/hprose/rpc"
+	"github.com/JexLib/golang/hprose/util"
 	"github.com/gorilla/websocket"
-	"github.com/hprose/hprose-golang/rpc"
-	"github.com/hprose/hprose-golang/util"
 )
 
 var httpContextType = reflect.TypeOf((*rpc.HTTPContext)(nil))

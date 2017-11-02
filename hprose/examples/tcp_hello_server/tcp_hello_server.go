@@ -1,6 +1,6 @@
 package main
 
-import "github.com/hprose/hprose-golang/rpc"
+import "github.com/JexLib/golang/hprose/rpc"
 
 func hello(name string) string {
 	return "Hello " + name + "!"

@@ -27,8 +27,8 @@ import (
 	"sync"
 	"time"
 
-	"github.com/hprose/hprose-golang/rpc"
-	"github.com/hprose/hprose-golang/util"
+	"github.com/JexLib/golang/hprose/rpc"
+	"github.com/JexLib/golang/hprose/util"
 	"github.com/valyala/fasthttp"
 )
 

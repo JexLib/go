@@ -27,7 +27,7 @@ import (
 	"strings"
 	"sync"
 
-	"github.com/hprose/hprose-golang/util"
+	"github.com/JexLib/golang/hprose/util"
 )
 
 // HTTPContext is the hprose http context
