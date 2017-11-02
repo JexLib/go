@@ -36,6 +36,9 @@ type Client struct {
 
 	// Buffered channel of outbound messages.
 	send chan []byte
+
+	//自定义唯一clientid
+	id interface{}
 }
 
 // readPump pumps messages from the websocket connection to the hub.
@@ -60,7 +63,7 @@ func (c *Client) readPump() {
 			break
 		}
 		message = bytes.TrimSpace(bytes.Replace(message, newline, space, -1))
-		c.hub.broadcast <- message
+		c.hub.broadcast <- jexWsocketBroadcast{msg: message}
 	}
 }
 

@@ -56,13 +56,16 @@ func NewWSService() *WSService {
 	return ws
 }
 
-func (ws *WSService) HandlerHTTP(writer http.ResponseWriter, request *http.Request) error {
+func (ws *WSService) HandlerHTTP(writer http.ResponseWriter, request *http.Request, clientid ...interface{}) error {
 	conn, err := ws.Upgrader.Upgrade(writer, request, nil)
 	if err != nil {
 		return err
 	}
 
 	client := &Client{hub: ws.Hub, conn: conn, send: make(chan []byte, 256)}
+	if len(clientid) > 0 {
+		client.id = clientid[0]
+	}
 	client.hub.register <- client
 
 	// Allow collection of memory referenced by the caller by doing all work in
@@ -74,6 +77,6 @@ func (ws *WSService) HandlerHTTP(writer http.ResponseWriter, request *http.Reque
 	return nil
 }
 
-func (ws *WSService) SendMessage(msg []byte) {
-	ws.Hub.broadcast <- msg
+func (ws *WSService) SendMessage(msg []byte, clientid ...interface{}) {
+	ws.Hub.broadcast <- jexWsocketBroadcast{msg: msg, clients: clientid}
 }

@@ -11,7 +11,7 @@ type Hub struct {
 	clients map[*Client]bool
 
 	// Inbound messages from the clients.
-	broadcast chan []byte
+	broadcast chan jexWsocketBroadcast
 
 	// Register requests from the clients.
 	register chan *Client
@@ -20,13 +20,30 @@ type Hub struct {
 	unregister chan *Client
 }
 
+type jexWsocketBroadcast struct {
+	msg     []byte
+	clients []interface{}
+}
+
 func newHub() *Hub {
 	return &Hub{
-		broadcast:  make(chan []byte),
+		broadcast:  make(chan jexWsocketBroadcast),
 		register:   make(chan *Client),
 		unregister: make(chan *Client),
 		clients:    make(map[*Client]bool),
 	}
+}
+
+func (h *Hub) haveclient(id interface{}, ids []interface{}) bool {
+	if len(ids) == 0 {
+		return true
+	}
+	for v := range ids {
+		if v == id {
+			return true
+		}
+	}
+	return false
 }
 
 func (h *Hub) run() {
@@ -41,11 +58,13 @@ func (h *Hub) run() {
 			}
 		case message := <-h.broadcast:
 			for client := range h.clients {
-				select {
-				case client.send <- message:
-				default:
-					close(client.send)
-					delete(h.clients, client)
+				if h.haveclient(client.id, message.clients) {
+					select {
+					case client.send <- message.msg:
+					default:
+						close(client.send)
+						delete(h.clients, client)
+					}
 				}
 			}
 		}
