@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"strconv"
 	"strings"
+	"time"
 )
 
 //千位分隔符格式化
@@ -62,4 +63,12 @@ func WithMetricPrefix(params string) string {
 func GetAVGEstreward(difficulty string, coinCount int) string {
 	d, _ := strconv.Atoi(difficulty)
 	return fmt.Sprintf("%.3f", 1000000000*3600*24*float32(coinCount)*0.99/float32(d)) + "GH/s"
+}
+
+func MustParseDuration(s string) time.Duration {
+	value, err := time.ParseDuration(s)
+	if err != nil {
+		panic("util: Can't parse duration `" + s + "`: " + err.Error())
+	}
+	return value
 }
