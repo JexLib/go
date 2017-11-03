@@ -1,4 +1,4 @@
-package http
+package gohttp
 
 import (
 	"bytes"
