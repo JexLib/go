@@ -5,8 +5,9 @@ package main
 
 import (
 	"fmt"
-	"github.com/ddliu/go-httpclient"
 	"net/http"
+
+	"github.com/JexLib/golang/gohttpclient"
 )
 
 const (
@@ -26,9 +27,9 @@ func main() {
 	res, _ := httpclient.
 		WithHeader("Accept-Language", "en-us").
 		WithCookie(&http.Cookie{
-		Name:  "name",
-		Value: "github",
-	}).
+			Name:  "name",
+			Value: "github",
+		}).
 		WithHeader("Referer", "http://google.com").
 		Get(SERVER, nil)
 
