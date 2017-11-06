@@ -1,4 +1,4 @@
-package cache
+package http
 
 import (
 	"bufio"
@@ -11,6 +11,10 @@ import (
 	"net/http/httputil"
 	"strings"
 	"time"
+
+	"github.com/JexLib/golang/cache"
+
+	"github.com/JexLib/golang/cache/memory"
 )
 
 type cacheControl map[string]string
@@ -23,21 +27,21 @@ const (
 	XFromCache = "X-From-Cache"
 )
 
-func NewHttpCacheTransport(c Cache) *Transport {
+func NewHttpCacheTransport(c cache.Cache) *Transport {
 	t := NewTransport(c)
 	return t
 }
 
 // NewHttpMemoryCacheTransport returns a new Transport using the in-memory cache implementation
 func NewHttpMemoryCacheTransport(defaultExpiration time.Duration, cleanupInterval ...time.Duration) *Transport {
-	c := NewMemoryCache(defaultExpiration, cleanupInterval...)
+	c := memory.NewMemoryCache(defaultExpiration, cleanupInterval...)
 	t := NewTransport(c)
 	return t
 }
 
 // CachedResponse returns the cached http.Response for req if present, and nil
 // otherwise.
-func CachedResponse(c Cache, req *http.Request) (resp *http.Response, err error) {
+func CachedResponse(c cache.Cache, req *http.Request) (resp *http.Response, err error) {
 	cachedVal := c.Get(cacheKey(req))
 	if cachedVal == nil {
 		return
@@ -62,14 +66,14 @@ type Transport struct {
 	// The RoundTripper interface actually used to make requests
 	// If nil, http.DefaultTransport is used
 	Transport http.RoundTripper
-	Cache     Cache
+	Cache     cache.Cache
 	// If true, responses returned from the cache will be given an extra header, X-From-Cache
 	MarkCachedResponses bool
 }
 
 // NewTransport returns a new Transport with the
 // provided Cache implementation and MarkCachedResponses set to true
-func NewTransport(c Cache) *Transport {
+func NewTransport(c cache.Cache) *Transport {
 	return &Transport{Cache: c, MarkCachedResponses: true}
 }
 

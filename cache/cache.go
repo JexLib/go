@@ -12,20 +12,19 @@ type Cache interface {
 	Set(key string, value interface{}, expiration ...time.Duration) error
 	Delete(key string) error
 	Clear() error
-	Count() int
+	Count() int64
 	SaveToFile(filename string) error
 	LoadFromFile(filename string) error
-	gc(gcInterval time.Duration)
 }
 
-type _CacheItem struct {
+type CacheItem struct {
 	Key        string
 	Val        interface{}
 	Expiration int64 `json:"-"`
 }
 
-func new_CacheItem(key string, val interface{}, d time.Duration) *_CacheItem {
-	return &_CacheItem{
+func NewCacheItem(key string, val interface{}, d time.Duration) *CacheItem {
+	return &CacheItem{
 		Key:        key,
 		Val:        val,
 		Expiration: time.Now().Add(d).UnixNano(),
@@ -33,6 +32,6 @@ func new_CacheItem(key string, val interface{}, d time.Duration) *_CacheItem {
 }
 
 //是否过期
-func (ci _CacheItem) Expired() bool {
+func (ci CacheItem) Expired() bool {
 	return ci.Expiration > 0 && ci.Expiration < time.Now().UnixNano()
 }

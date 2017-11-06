@@ -1,4 +1,4 @@
-package cache
+package http
 
 import (
 	"bytes"
@@ -12,6 +12,8 @@ import (
 	"strconv"
 	"testing"
 	"time"
+
+	"github.com/JexLib/golang/cache/memory"
 )
 
 var s struct {
@@ -155,7 +157,7 @@ func teardown() {
 }
 
 func resetTest() {
-	s.transport.Cache = NewMemoryCache(time.Second*5, time.Second*2)
+	s.transport.Cache = memory.NewMemoryCache(time.Second*5, time.Second*2)
 	clock = &realClock{}
 }
 
