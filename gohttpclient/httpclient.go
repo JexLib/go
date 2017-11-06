@@ -5,6 +5,7 @@
 package httpclient
 
 import (
+	"encoding/json"
 	"fmt"
 
 	"bytes"
@@ -535,7 +536,7 @@ func (this *HttpClient) WithCookie(cookies ...*http.Cookie) *HttpClient {
 //
 // Usually we just need the Get and Post method.
 func (this *HttpClient) Do(method string, url string, headers map[string]string,
-	body io.Reader) (*Response, error) {
+	body io.Reader, jsonStruct_ptr ...interface{}) (*Response, error) {
 	options := mergeOptions(defaultOptions, this.Options, this.oneTimeOptions)
 	headers = mergeHeaders(this.Headers, this.oneTimeHeaders, headers)
 	cookies := this.oneTimeCookies
@@ -611,6 +612,11 @@ func (this *HttpClient) Do(method string, url string, headers map[string]string,
 
 	res, err := c.Do(req)
 
+	if len(jsonStruct_ptr) > 0 {
+		if bytes, err := ioutil.ReadAll(res.Body); err == nil {
+			err = json.Unmarshal(bytes, jsonStruct_ptr[0])
+		}
+	}
 	return &Response{res}, err
 }
 
@@ -623,11 +629,11 @@ func (this *HttpClient) Head(url string, params map[string]string) (*Response,
 }
 
 // The GET request
-func (this *HttpClient) Get(url string, params map[string]string) (*Response,
+func (this *HttpClient) Get(url string, params map[string]string, jsonStruct_ptr ...interface{}) (*Response,
 	error) {
 	url = addParams(url, params)
 
-	return this.Do("GET", url, nil, nil)
+	return this.Do("GET", url, nil, nil, jsonStruct_ptr...)
 }
 
 // The DELETE request
@@ -645,7 +651,7 @@ func (this *HttpClient) Delete(url string, params map[string]string) (*Response,
 //
 // If any of the params key starts with "@", it is considered as a form file
 // (similar to CURL but different).
-func (this *HttpClient) Post(url string, params map[string]string) (*Response,
+func (this *HttpClient) Post(url string, params map[string]string, jsonStruct_ptr ...interface{}) (*Response,
 	error) {
 	// Post with files should be sent as multipart.
 	if checkParamFile(params) {
@@ -656,7 +662,7 @@ func (this *HttpClient) Post(url string, params map[string]string) (*Response,
 	headers["Content-Type"] = "application/x-www-form-urlencoded"
 	body := strings.NewReader(paramsToString(params))
 
-	return this.Do("POST", url, headers, body)
+	return this.Do("POST", url, headers, body, jsonStruct_ptr)
 }
 
 // Post with the request encoded as "multipart/form-data".

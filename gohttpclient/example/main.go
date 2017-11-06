@@ -23,14 +23,14 @@ func main() {
 		"opt_timeout":     TIMEOUT,
 		"Accept-Encoding": "gzip,deflate,sdch",
 	})
-
+ 
 	res, _ := httpclient.
 		WithHeader("Accept-Language", "en-us").
 		WithCookie(&http.Cookie{
 			Name:  "name",
 			Value: "github",
 		}).
-		WithHeader("Referer", "http://google.com").
+		WithHeader("Referer", "http://163.com").
 		Get(SERVER, nil)
 
 	fmt.Println("Cookies:")

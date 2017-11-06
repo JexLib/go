@@ -7,6 +7,8 @@ import (
 	"io/ioutil"
 	"net/http"
 
+	"github.com/JexLib/golang/cache"
+
 	"github.com/JexLib/golang/utils"
 )
 
@@ -14,12 +16,18 @@ type HttpClient struct {
 	client *http.Client
 }
 
-func NewHttpClient(timeout string) *HttpClient {
+func NewHttpClient(timeout string, mcache ...cache.Cache) *HttpClient {
 	timeoutIntv := utils.MustParseDuration(timeout)
+	mClient := &http.Client{
+		Timeout: timeoutIntv,
+	}
+
+	if len(mcache) > 0 {
+		mClient.Transport = cache.NewHttpCacheTransport(mcache[0])
+	}
+
 	return &HttpClient{
-		client: &http.Client{
-			Timeout: timeoutIntv,
-		},
+		client: mClient,
 	}
 }
 

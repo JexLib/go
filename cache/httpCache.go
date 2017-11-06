@@ -23,6 +23,11 @@ const (
 	XFromCache = "X-From-Cache"
 )
 
+func NewHttpCacheTransport(c Cache) *Transport {
+	t := NewTransport(c)
+	return t
+}
+
 // NewHttpMemoryCacheTransport returns a new Transport using the in-memory cache implementation
 func NewHttpMemoryCacheTransport(defaultExpiration time.Duration, cleanupInterval ...time.Duration) *Transport {
 	c := NewMemoryCache(defaultExpiration, cleanupInterval...)
