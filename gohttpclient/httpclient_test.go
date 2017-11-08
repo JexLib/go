@@ -11,6 +11,9 @@ import (
 	"net/http"
 	"strings"
 	"testing"
+	"time"
+
+	httpCache "github.com/JexLib/golang/cache/http"
 )
 
 // common response format on httpbin.org
@@ -23,6 +26,43 @@ type ResponseInfo struct {
 	Files     map[string]string `json:"files"`
 	Headers   map[string]string `json:"headers"`
 	Cookies   map[string]string `json:"cookies"`
+}
+
+func StartTestServer(t *testing.T) {
+	http.HandleFunc("/now", func(w http.ResponseWriter, r *http.Request) {
+		d := time.Now().Format("2006-01-02 15:04:05")
+		fmt.Println("收到now请求", d)
+		fmt.Fprintf(w, d)
+	})
+	t.Log("listen on port 9090")
+	err := http.ListenAndServe("127.0.0.1:9090", nil)
+	if err != nil {
+		t.Fatal("ListenAndServe:", err)
+	}
+}
+
+func TestRequest_cache(t *testing.T) {
+	go StartTestServer(t)
+	tp := httpCache.NewHttpMemoryCacheTransport(time.Second*5, time.Second*2)
+	client := &HttpClient{
+		reuseTransport: true,
+		reuseJar:       true,
+		transport:      tp,
+	}
+
+	// get
+	res, err := client.Get("http://127.0.0.1:9090/now", nil)
+
+	if err != nil {
+		t.Error("get failed", err)
+	}
+
+	if res.StatusCode != 200 {
+		t.Error("Status Code not 200")
+	} else {
+		str, _ := res.ToString()
+		t.Log("返回数据:", res.Header, str)
+	}
 }
 
 func TestRequest(t *testing.T) {

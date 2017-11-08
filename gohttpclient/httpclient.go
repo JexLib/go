@@ -28,6 +28,8 @@ import (
 	"compress/gzip"
 
 	"mime/multipart"
+
+	"github.com/JexLib/golang/cache"
 )
 
 // Constants definations
@@ -183,6 +185,10 @@ func prepareRequest(method string, url_ string, headers map[string]string,
 // Handles timemout, proxy and maybe other transport related options here.
 func prepareTransport(options map[int]interface{}) (http.RoundTripper, error) {
 	transport := &http.Transport{}
+	// transport := &http.Transport{
+	// 	TLSClientConfig:   &tls.Config{InsecureSkipVerify: true},
+	// 	DisableKeepAlives: false,
+	// }
 
 	connectTimeoutMS := 0
 
@@ -476,6 +482,14 @@ func (this *HttpClient) reset() {
 	}
 }
 
+//使用缓存
+func (this *HttpClient) WithCache(c cache.Cache) *HttpClient {
+	tp := NewCacheTransport(c)
+	tp.Transport = this.transport
+	this.transport = tp
+	return this
+}
+
 // Temporarily specify an option of the current request.
 func (this *HttpClient) WithOption(k int, v interface{}) *HttpClient {
 	if this.oneTimeOptions == nil {
@@ -612,7 +626,7 @@ func (this *HttpClient) Do(method string, url string, headers map[string]string,
 
 	res, err := c.Do(req)
 
-	if len(jsonStruct_ptr) > 0 {
+	if err == nil && len(jsonStruct_ptr) > 0 {
 		if bytes, err := ioutil.ReadAll(res.Body); err == nil {
 			err = json.Unmarshal(bytes, jsonStruct_ptr[0])
 		}
@@ -665,8 +679,21 @@ func (this *HttpClient) Post(url string, params map[string]string, jsonStruct_pt
 	return this.Do("POST", url, headers, body, jsonStruct_ptr)
 }
 
+func (this *HttpClient) Put(url string, params map[string]string, jsonStruct_ptr ...interface{}) (*Response, error) {
+	// Post with files should be sent as multipart.
+	if checkParamFile(params) {
+		return this.PostMultipart(url, params)
+	}
+
+	headers := make(map[string]string)
+	headers["Content-Type"] = "application/x-www-form-urlencoded; charset=UTF-8"
+	body := strings.NewReader(paramsToString(params))
+
+	return this.Do("PUT", url, headers, body, jsonStruct_ptr)
+}
+
 // Post with the request encoded as "multipart/form-data".
-func (this *HttpClient) PostMultipart(url string, params map[string]string) (
+func (this *HttpClient) PostMultipart(url string, params map[string]string, jsonStruct_ptr ...interface{}) (
 	*Response, error) {
 	body := &bytes.Buffer{}
 	writer := multipart.NewWriter(body)
@@ -691,7 +718,7 @@ func (this *HttpClient) PostMultipart(url string, params map[string]string) (
 		return nil, err
 	}
 
-	return this.Do("POST", url, headers, body)
+	return this.Do("POST", url, headers, body, jsonStruct_ptr...)
 }
 
 // Get cookies of the client jar.

@@ -1,4 +1,4 @@
-package http
+package httpclient
 
 import (
 	"bufio"
@@ -13,8 +13,6 @@ import (
 	"time"
 
 	"github.com/JexLib/golang/cache"
-
-	"github.com/JexLib/golang/cache/memory"
 )
 
 type cacheControl map[string]string
@@ -26,18 +24,6 @@ const (
 	// XFromCache is the header added to responses that are returned from the cache
 	XFromCache = "X-From-Cache"
 )
-
-func NewHttpCacheTransport(c cache.Cache) *Transport {
-	t := NewTransport(c)
-	return t
-}
-
-// NewHttpMemoryCacheTransport returns a new Transport using the in-memory cache implementation
-func NewHttpMemoryCacheTransport(defaultExpiration time.Duration, cleanupInterval ...time.Duration) *Transport {
-	c := memory.NewMemoryCache(defaultExpiration, cleanupInterval...)
-	t := NewTransport(c)
-	return t
-}
 
 // CachedResponse returns the cached http.Response for req if present, and nil
 // otherwise.
@@ -73,7 +59,7 @@ type Transport struct {
 
 // NewTransport returns a new Transport with the
 // provided Cache implementation and MarkCachedResponses set to true
-func NewTransport(c cache.Cache) *Transport {
+func NewCacheTransport(c cache.Cache) *Transport {
 	return &Transport{Cache: c, MarkCachedResponses: true}
 }
 

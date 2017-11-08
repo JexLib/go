@@ -19,7 +19,8 @@ var Get func(string, map[string]string, ...interface{}) (*Response, error)
 var Delete func(string, map[string]string) (*Response, error)
 var Head func(string, map[string]string) (*Response, error)
 var Post func(string, map[string]string, ...interface{}) (*Response, error)
-var PostMultipart func(string, map[string]string) (*Response, error)
+var Put func(string, map[string]string, ...interface{}) (*Response, error)
+var PostMultipart func(string, map[string]string, ...interface{}) (*Response, error)
 var WithOption func(int, interface{}) *HttpClient
 var WithOptions func(Map) *HttpClient
 var WithHeader func(string, string) *HttpClient
@@ -39,6 +40,7 @@ func init() {
 	Head = defaultClient.Head
 	Post = defaultClient.Post
 	PostMultipart = defaultClient.PostMultipart
+	Put = defaultClient.Put
 	WithOption = defaultClient.WithOption
 	WithOptions = defaultClient.WithOptions
 	WithHeader = defaultClient.WithHeader
