@@ -64,9 +64,9 @@ func NewCacheTransport(c cache.Cache) *Transport {
 }
 
 // Client returns an *http.Client that caches responses.
-func (t *Transport) Client() *http.Client {
-	return &http.Client{Transport: t}
-}
+// func (t *Transport) Client() *http.Client {
+// 	return &http.Client{Transport: t.Transport}
+// }
 
 // varyMatches will return false unless all of the cached values for the headers listed in Vary
 // match the new request

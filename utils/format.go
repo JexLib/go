@@ -60,9 +60,9 @@ func WithMetricPrefix(params string) string {
 }
 
 //每天平均收益 例如eth GetAVGEstreward(12234242,3)
-func GetAVGEstreward(difficulty string, coinCount int) string {
+func GetAVGEstreward(difficulty string, coinCount float32) string {
 	d, _ := strconv.Atoi(difficulty)
-	return fmt.Sprintf("%.3f", 1000000000*3600*24*float32(coinCount)*0.99/float32(d)) + "GH/s"
+	return fmt.Sprintf("%.3f", 1000000000*3600*24*coinCount*0.99/float32(d)) + "GH/s"
 }
 
 func MustParseDuration(s string) time.Duration {

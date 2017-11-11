@@ -20,16 +20,12 @@ const (
 	SERVER          = "https://github.com"
 )
 
-var (
-	clientUseCache = httpclient.NewHttpClient()
-)
-
 func StartTestServer() {
 	http.HandleFunc("/now", func(w http.ResponseWriter, r *http.Request) {
 		d := time.Now().Format("2006-01-02 15:04:05")
 		fmt.Println("收到now请求", d)
 		w.Header().Set("Cache-Control", "max-age=3600")
-		//time.Sleep(time.Second * 15)
+		time.Sleep(time.Second * 15)
 		fmt.Fprintf(w, d)
 	})
 	fmt.Println("listen on port 9090")
@@ -39,7 +35,7 @@ func StartTestServer() {
 	}
 }
 
-func TestGet_cache() {
+func TestGet_cache(clientUseCache *httpclient.HttpClient) {
 
 	// get
 	res, err := clientUseCache.Get("http://127.0.0.1:9090/now", nil)
@@ -83,16 +79,27 @@ func main() {
 
 	//缓存测试
 	mCache := memory.NewMemoryCache(time.Second*5, time.Second*2)
-	clientUseCache.WithCache(mCache)
-	clientUseCache.WithOptions(httpclient.Map{
-		"opt_useragent":   USERAGENT,
-		"opt_timeout":     TIMEOUT,
-		"Accept-Encoding": "gzip,deflate,sdch",
-	})
+	clientUseCache := httpclient.NewHttpClient()
+	clientUseCache.Defaults(
+		httpclient.Map{
+			"opt_useragent":   USERAGENT,
+			"opt_timeout":     TIMEOUT,
+			"Accept-Encoding": "gzip,deflate,sdch",
+		},
+	)
+	// clientUseCache.WithOptions(httpclient.Map{
+	// 	"opt_useragent":   USERAGENT,
+	// 	"opt_timeout":     TIMEOUT,
+	// 	"Accept-Encoding": "gzip,deflate,sdch",
+	// })
+
 	clientUseCache.WithHeader("Cache-Control", "max-age=3600")
+	clientUseCache.WithCache(mCache)
 	go StartTestServer()
 	for {
-		TestGet_cache()
+
+		TestGet_cache(clientUseCache)
+
 		time.Sleep(time.Second)
 	}
 

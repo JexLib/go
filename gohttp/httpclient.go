@@ -12,32 +12,30 @@ import (
 	"github.com/JexLib/golang/utils"
 )
 
-type HttpClient struct {
+type Client struct {
 	client *http.Client
 }
 
-func NewHttpClient(timeout string, mcache ...cache.Cache) *HttpClient {
-	timeoutIntv := utils.MustParseDuration(timeout)
-	mClient := &http.Client{
-		Timeout: timeoutIntv,
-	}
+func NewClient(mcache ...cache.Cache) *Client {
+	mClient := &http.Client{}
 
-	if len(mcache) > 0 {
-		mClient.Transport = cache.NewHttpCacheTransport(mcache[0])
-	}
-
-	return &HttpClient{
+	return &Client{
 		client: mClient,
 	}
 }
 
-func (r *HttpClient) Post(url string, data_ptr interface{}) ([]byte, error) {
-	data, _ := json.Marshal(data_ptr)
-	return r.doHttpRequest(url, "POST", data)
+func (r *Client) SetTimeOut(timeout string) *Client {
+	r.client.Timeout = utils.MustParseDuration(timeout)
+	return r
 }
 
-func (r *HttpClient) Get(url string, result_ptr ...interface{}) (bytes []byte, err error) {
-	if bytes, err = r.doHttpRequest(url, "GET", nil); err == nil && len(result_ptr) > 0 {
+func (r *Client) Post(url string, data_ptr interface{}) ([]byte, error) {
+	data, _ := json.Marshal(data_ptr)
+	return r.doRequest(url, "POST", data)
+}
+
+func (r *Client) Get(url string, result_ptr ...interface{}) (bytes []byte, err error) {
+	if bytes, err = r.doRequest(url, "GET", nil); err == nil && len(result_ptr) > 0 {
 		err = json.Unmarshal(bytes, result_ptr[0]) // JSON to Struct
 		if err != nil {
 			fmt.Println(err)
@@ -47,7 +45,7 @@ func (r *HttpClient) Get(url string, result_ptr ...interface{}) (bytes []byte, e
 	return
 }
 
-func (r *HttpClient) doHttpRequest(url string, method string, data []byte) ([]byte, error) {
+func (r *Client) doRequest(url string, method string, data []byte) ([]byte, error) {
 	req, err := http.NewRequest(method, url, bytes.NewBuffer(data))
 	if method == "POST" {
 		req.Header.Set("Content-Length", (string)(len(data)))

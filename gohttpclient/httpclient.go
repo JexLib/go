@@ -189,7 +189,7 @@ func prepareTransport(options map[int]interface{}) (http.RoundTripper, error) {
 	// 	TLSClientConfig:   &tls.Config{InsecureSkipVerify: true},
 	// 	DisableKeepAlives: false,
 	// }
-
+	fmt.Println("pppppppppppppppppppppppp")
 	connectTimeoutMS := 0
 
 	if connectTimeoutMS_, ok := options[OPT_CONNECTTIMEOUT_MS]; ok {
@@ -487,6 +487,7 @@ func (this *HttpClient) WithCache(c cache.Cache) *HttpClient {
 	tp := NewCacheTransport(c)
 	tp.Transport = this.transport
 	this.transport = tp
+	fmt.Println("tttttttt")
 	return this
 }
 
@@ -673,7 +674,7 @@ func (this *HttpClient) Post(url string, params map[string]string, jsonStruct_pt
 	}
 
 	headers := make(map[string]string)
-	headers["Content-Type"] = "application/x-www-form-urlencoded"
+	headers["Content-Type"] = "application/x-www-form-urlencoded; charset=utf-8"
 	body := strings.NewReader(paramsToString(params))
 
 	return this.Do("POST", url, headers, body, jsonStruct_ptr)
