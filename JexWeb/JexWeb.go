@@ -7,12 +7,11 @@ import (
 
 	"golang.org/x/crypto/acme/autocert"
 
-	jex_middleware "github.com/JexLib/golang/JexWeb/middleware"
 	"github.com/JexLib/golang/JexWeb/session"
+
 	"github.com/labstack/echo"
 	"github.com/labstack/echo/middleware"
 	"github.com/unrolled/render"
-	"github.com/xyproto/permissionbolt"
 )
 
 const (
@@ -34,33 +33,36 @@ const (
 
 type (
 	JexWeb struct {
-		Config        Config
-		Echo          *echo.Echo
-		Perm          *permissionbolt.Permissions
-		_denyFunction echo.HandlerFunc
+		Config Config
+		Echo   *echo.Echo
+		// Perm          *permissionbolt.Permissions
+		// _denyFunction echo.HandlerFunc
 		//controllers   map[string]iController
 	}
 
-	Group struct {
-		controller iController
-		*echo.Group
-	}
-
-	Route struct {
-		Method  string
-		Path    string
-		Handler string
-		// mw      echo.MiddlewareFunc
-	}
-
-	HandlerFunc func() error
+	// HandlerFunc func() error
 )
 
-func New(config Config) *JexWeb {
+func defConfig() Config {
+	return Config{
+		HttpPort:      8080,
+		AssetsDir:     "public/assets",
+		PublicDir:     "public",
+		TemplateDir:   "templates",
+		AppLayout:     "layout",
+		IsDevelopment: true,
+	}
+}
+
+func New(store ...session.Store) *JexWeb {
+	return NewWithConfig(defConfig(), store...)
+}
+
+func NewWithConfig(config Config, store ...session.Store) *JexWeb {
 	jwb := &JexWeb{
-		Config:        config,
-		Echo:          echo.New(),
-		_denyFunction: permissionDenied,
+		Config: config,
+		Echo:   echo.New(),
+		// _denyFunction: permissionDenied,
 		//	controllers:        make(map[string]iController),
 	}
 	jwb.Echo.Use(middleware.Recover())
@@ -70,43 +72,46 @@ func New(config Config) *JexWeb {
 		Format: "method=${method}, uri=${uri}, status=${status}\n",
 	}))
 
-	jwb.Perm, _ = permissionbolt.NewWithConf("permdb")
-	jwb.Perm.UserState().SetCookieTimeout(60 * 60)
-	store := session.NewFileSystemStoreStore("store")
-	jwb.Echo.Use(session.Sessions("SESSID", store))
+	if len(store) > 0 {
+		jwb.Echo.Use(session.Sessions("SESSID", store[0]))
+	}
+	// jwb.Perm, _ = permissionbolt.NewWithConf("permdb")
+	// jwb.Perm.UserState().SetCookieTimeout(60 * 60)
+	// store := session.NewFileSystemStoreStore("store")
+	// jwb.Echo.Use(session.Sessions("SESSID", store))
 	return jwb
 }
 
-func (jwb *JexWeb) UsePermissionMW(beforeMiddleware ...echo.MiddlewareFunc) {
-	jwb.Echo.Use(beforeMiddleware...)
-	jwb.Echo.Use(jex_middleware.PermissionMiddleware(jwb.Perm, jwb.denyFunction))
-}
+// func (jwb *JexWeb) UsePermissionMW(beforeMiddleware ...echo.MiddlewareFunc) {
+// 	jwb.Echo.Use(beforeMiddleware...)
+// 	jwb.Echo.Use(jex_middleware.PermissionMiddleware(jwb.Perm, jwb.denyFunction))
+// }
 
-func permissionDenied(c echo.Context) error {
-	c.Error(echo.ErrForbidden)
-	return nil
-	//return c.String(http.StatusForbidden, "Permission denied!")
-}
+// func permissionDenied(c echo.Context) error {
+// 	c.Error(echo.ErrForbidden)
+// 	return nil
+// 	//return c.String(http.StatusForbidden, "Permission denied!")
+// }
 
-func (jwb *JexWeb) denyFunction(c echo.Context) error {
-	// if web._denyFunction == nil {
-	// 	return c.String(http.StatusForbidden, "Permission denied!")
-	// } else {
-	return jwb._denyFunction(c)
-	// }
-}
+// func (jwb *JexWeb) denyFunction(c echo.Context) error {
+// 	// if web._denyFunction == nil {
+// 	// 	return c.String(http.StatusForbidden, "Permission denied!")
+// 	// } else {
+// 	return jwb._denyFunction(c)
+// 	// }
+// }
 
-func (jwb *JexWeb) SetDenyFunction(denyFunction echo.HandlerFunc) {
-	jwb._denyFunction = denyFunction
-}
+// func (jwb *JexWeb) SetDenyFunction(denyFunction echo.HandlerFunc) {
+// 	jwb._denyFunction = denyFunction
+// }
 
-func (jwb *JexWeb) Group(prefix string, controller iController, m ...echo.MiddlewareFunc) *Group {
+// func (jwb *JexWeb) Group(prefix string, controller iController, m ...echo.MiddlewareFunc) *Group {
 
-	return &Group{
-		controller: controller,
-		Group:      jwb.Echo.Group(prefix, m...),
-	}
-}
+// 	return &Group{
+// 		controller: controller,
+// 		Group:      jwb.Echo.Group(prefix, m...),
+// 	}
+// }
 
 func defHandleFunc(handlerFuncName string, controller iController) echo.HandlerFunc {
 	return func(c echo.Context) error {
@@ -127,64 +132,95 @@ func defHandleFunc(handlerFuncName string, controller iController) echo.HandlerF
 	}
 }
 
-func (jwb *JexWeb) GET(path string, controller iController, handlerFuncName string, m ...echo.MiddlewareFunc) {
-	jwb.Echo.GET(path, defHandleFunc(handlerFuncName, controller), m...)
+type HandlerFunc func(*JexContext) error
+
+func (jwb *JexWeb) GET(path string, h echo.HandlerFunc, m ...echo.MiddlewareFunc) {
+	fmt.Println("path:", path)
+	jwb.Echo.GET(path, func(c echo.Context) error {
+		t := reflect.TypeOf(h)
+
+		fmt.Printf("参数数量:", t.NumIn())
+		fmt.Println("参数类型", t.In(0))
+		i := 0
+		for ; i < t.NumIn()-1; i++ {
+			fmt.Println("    ┣", t.In(i)) // 获取参数类型
+		}
+
+		// fmt.Printf("\n%-8v %v 个方法:\n", v, v.NumMethod())
+		// fmt.Println("ttt:",)
+		for i := 0; i < t.NumMethod(); i++ {
+			fmt.Println("Method:", t.Method(i).Name)
+		}
+
+		// t := reflect.TypeOf(h)
+		// e := t.Elem()
+		// var v = reflect.New(e)
+		// jc := v.Interface().(iController)
+		// jc.init(c)
+		// jc.Init()
+
+		return nil
+	}, m...)
 }
 
-func (g *Group) GET(path string, handlerFuncName string, m ...echo.MiddlewareFunc) *Group {
-	g.Group.GET(path, defHandleFunc(handlerFuncName, g.controller), m...)
-	return g
-}
+// func (jwb *JexWeb) GET(path string, controller iController, handlerFuncName string, m ...echo.MiddlewareFunc) {
+// 	jwb.Echo.GET(path, defHandleFunc(handlerFuncName, controller), m...)
+// }
 
-func (g *Group) POST(path string, handlerFuncName string, m ...echo.MiddlewareFunc) *Group {
-	g.Group.POST(path, defHandleFunc(handlerFuncName, g.controller), m...)
-	return g
-}
+// func (g *Group) GET(path string, handlerFuncName string, m ...echo.MiddlewareFunc) *Group {
+// 	g.Group.GET(path, defHandleFunc(handlerFuncName, g.controller), m...)
+// 	return g
+// }
 
-func (g *Group) Any(path string, handlerFuncName string, m ...echo.MiddlewareFunc) *Group {
-	g.Group.Any(path, defHandleFunc(handlerFuncName, g.controller), m...)
-	return g
-}
+// func (g *Group) POST(path string, handlerFuncName string, m ...echo.MiddlewareFunc) *Group {
+// 	g.Group.POST(path, defHandleFunc(handlerFuncName, g.controller), m...)
+// 	return g
+// }
 
-func (g *Group) DELETE(path string, handlerFuncName string, m ...echo.MiddlewareFunc) *Group {
-	g.Group.DELETE(path, defHandleFunc(handlerFuncName, g.controller), m...)
-	return g
-}
+// func (g *Group) Any(path string, handlerFuncName string, m ...echo.MiddlewareFunc) *Group {
+// 	g.Group.Any(path, defHandleFunc(handlerFuncName, g.controller), m...)
+// 	return g
+// }
 
-func (g *Group) OPTIONS(path string, handlerFuncName string, m ...echo.MiddlewareFunc) *Group {
-	g.Group.OPTIONS(path, defHandleFunc(handlerFuncName, g.controller), m...)
-	return g
-}
+// func (g *Group) DELETE(path string, handlerFuncName string, m ...echo.MiddlewareFunc) *Group {
+// 	g.Group.DELETE(path, defHandleFunc(handlerFuncName, g.controller), m...)
+// 	return g
+// }
 
-func (g *Group) PATCH(path string, handlerFuncName string, m ...echo.MiddlewareFunc) *Group {
-	g.Group.PATCH(path, defHandleFunc(handlerFuncName, g.controller), m...)
-	return g
-}
+// func (g *Group) OPTIONS(path string, handlerFuncName string, m ...echo.MiddlewareFunc) *Group {
+// 	g.Group.OPTIONS(path, defHandleFunc(handlerFuncName, g.controller), m...)
+// 	return g
+// }
 
-func (g *Group) PUT(path string, handlerFuncName string, m ...echo.MiddlewareFunc) *Group {
-	g.Group.PUT(path, defHandleFunc(handlerFuncName, g.controller), m...)
-	return g
-}
+// func (g *Group) PATCH(path string, handlerFuncName string, m ...echo.MiddlewareFunc) *Group {
+// 	g.Group.PATCH(path, defHandleFunc(handlerFuncName, g.controller), m...)
+// 	return g
+// }
 
-func (g *Group) HEAD(path string, handlerFuncName string, m ...echo.MiddlewareFunc) *Group {
-	g.Group.HEAD(path, defHandleFunc(handlerFuncName, g.controller), m...)
-	return g
-}
+// func (g *Group) PUT(path string, handlerFuncName string, m ...echo.MiddlewareFunc) *Group {
+// 	g.Group.PUT(path, defHandleFunc(handlerFuncName, g.controller), m...)
+// 	return g
+// }
 
-func (g *Group) CONNECT(path string, handlerFuncName string, m ...echo.MiddlewareFunc) *Group {
-	g.Group.CONNECT(path, defHandleFunc(handlerFuncName, g.controller), m...)
-	return g
-}
+// func (g *Group) HEAD(path string, handlerFuncName string, m ...echo.MiddlewareFunc) *Group {
+// 	g.Group.HEAD(path, defHandleFunc(handlerFuncName, g.controller), m...)
+// 	return g
+// }
 
-func (g *Group) TRACE(path string, handlerFuncName string, m ...echo.MiddlewareFunc) *Group {
-	g.Group.TRACE(path, defHandleFunc(handlerFuncName, g.controller), m...)
-	return g
-}
+// func (g *Group) CONNECT(path string, handlerFuncName string, m ...echo.MiddlewareFunc) *Group {
+// 	g.Group.CONNECT(path, defHandleFunc(handlerFuncName, g.controller), m...)
+// 	return g
+// }
 
-func (g *Group) Match(methods []string, path string, handlerFuncName string, m ...echo.MiddlewareFunc) *Group {
-	g.Group.Match(methods, path, defHandleFunc(handlerFuncName, g.controller), m...)
-	return g
-}
+// func (g *Group) TRACE(path string, handlerFuncName string, m ...echo.MiddlewareFunc) *Group {
+// 	g.Group.TRACE(path, defHandleFunc(handlerFuncName, g.controller), m...)
+// 	return g
+// }
+
+// func (g *Group) Match(methods []string, path string, handlerFuncName string, m ...echo.MiddlewareFunc) *Group {
+// 	g.Group.Match(methods, path, defHandleFunc(handlerFuncName, g.controller), m...)
+// 	return g
+// }
 
 // func (jwb *JexWeb) Any(path string, controller iController, handler string, m ...echo.MiddlewareFunc) {
 // 	jwb.Echo.Any(path, jwb.routeHandleName(controller, handler), m...)

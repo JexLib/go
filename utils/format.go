@@ -40,7 +40,8 @@ func FormatHashrate(hashrate float64) string {
 
 //矿池难度格式化
 func WithMetricPrefix(params string) string {
-	a, err := strconv.Atoi(params)
+	a, err := strconv.ParseFloat(params, 32)
+
 	if err != nil {
 		return params
 	}

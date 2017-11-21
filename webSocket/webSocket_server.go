@@ -43,6 +43,8 @@ type WSService struct {
 	Hub      *Hub
 }
 
+type OnClientEvent func(clientid interface{})
+
 func NewWSService() *WSService {
 
 	ws := &WSService{
@@ -58,6 +60,14 @@ func NewWSService() *WSService {
 	}
 	go ws.Hub.run()
 	return ws
+}
+
+func (ws *WSService) SetClientRegeditEvent(onClientEvent OnClientEvent) {
+	ws.Hub.onClientRegeditEvent = onClientEvent
+}
+
+func (ws *WSService) SetClientUnRegeditEvent(onClientEvent OnClientEvent) {
+	ws.Hub.onClientUnRegeditEvent = onClientEvent
 }
 
 func (ws *WSService) HandlerHTTP(writer http.ResponseWriter, request *http.Request, clientid ...interface{}) error {

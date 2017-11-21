@@ -1,7 +1,6 @@
 package jexweb
 
 import (
-	"github.com/JexLib/golang/JexWeb/session"
 	"github.com/labstack/echo"
 )
 
@@ -63,35 +62,35 @@ func (c *Controller) GetData(key string) interface{} {
 	return c.Data[key]
 }
 
-func (c *Controller) Session() session.Session {
-	return session.Default(c.Context)
-}
+// func (c *Controller) Session() session.Session {
+// 	return session.Default(c.Context)
+// }
 
-func (f *Flash) Set(key string, value interface{}) {
-	f.controller.Session().AddFlash(map[string]interface{}{
-		key: value,
-	})
-}
+// func (f *Flash) Set(key string, value interface{}) {
+// 	f.controller.Session().AddFlash(map[string]interface{}{
+// 		key: value,
+// 	})
+// }
 
-func (f *Flash) Info(value interface{}) {
-	f.Set("info", value)
-}
+// func (f *Flash) Info(value interface{}) {
+// 	f.Set("info", value)
+// }
 
-func (f *Flash) Error(value interface{}) {
-	f.Set("error", value)
-}
+// func (f *Flash) Error(value interface{}) {
+// 	f.Set("error", value)
+// }
 
-func (f *Flash) Success(value interface{}) {
-	f.Set("success", value)
-}
+// func (f *Flash) Success(value interface{}) {
+// 	f.Set("success", value)
+// }
 
-func (f *Flash) Save() {
-	f.controller.Session().Save()
-}
+// func (f *Flash) Save() {
+// 	f.controller.Session().Save()
+// }
 
-func (f *Flash) Data() []interface{} {
-	return f.controller.Session().Flashes()
-}
+// func (f *Flash) Data() []interface{} {
+// 	return f.controller.Session().Flashes()
+// }
 
 // func (c *Controller) Render(code int, name string, data interface{}) error {
 
