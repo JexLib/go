@@ -1,17 +1,21 @@
 package configor
 
 import (
-	"errors"
 	"flag"
 	"fmt"
 	"os"
 	"reflect"
 	"regexp"
+	"runtime"
 	"strings"
 )
 
 type Configor struct {
 	*Config
+
+	optHelp *bool
+	optFile *string
+	optVer  *bool
 }
 
 type Config struct {
@@ -66,12 +70,13 @@ func (configor *Configor) GetEnvironment() string {
 }
 
 func (configor *Configor) flagValue(v flagSpec) {
-	fmt.Println(v.Name)
 	help := v.HelpMessage
 	if v.Required {
-		help = "<required> " + v.HelpMessage
+		help = "<*required> " + v.HelpMessage
 	}
-
+	if v.ShortName == "" {
+		v.ShortName = v.Name
+	}
 	switch v.Type.Kind() {
 	case reflect.Bool:
 		var value bool
@@ -104,102 +109,95 @@ func (configor *Configor) flagValue(v flagSpec) {
 	}
 }
 
-func (configor *Configor) flagFromTag(config interface{}, ntag []string) error {
-	configValue := reflect.Indirect(reflect.ValueOf(config))
-	if configValue.Kind() != reflect.Struct {
-		return errors.New("invalid config, should be struct")
+//根据tag获取默认结构数据
+func (configor *Configor) Default(config interface{}) (err error) {
+	prefix := configor.getENVPrefix(config)
+	if prefix == "-" {
+		err = configor.processTags(false, config, []string{})
 	}
-	configType := configValue.Type()
-	for i := 0; i < configType.NumField(); i++ {
-		var (
-			fieldStruct = configType.Field(i)
-			field       = configValue.Field(i)
-		)
+	err = configor.processTags(false, config, []string{}, prefix)
+	return
+}
 
-		if !field.CanAddr() || !field.CanInterface() {
-			continue
-		}
-		for field.Kind() == reflect.Ptr {
-			field = field.Elem()
-		}
-		if field.Kind() == reflect.Struct {
-			if err := configor.flagFromTag(field.Addr().Interface(), append(ntag, fieldStruct.Name)); err != nil {
+func (configor *Configor) _Load(name string, version string, createFlag bool, config interface{}, files ...string) (err error) {
+
+	if !createFlag {
+		// for _, file := range configor.getConfigurationFiles(files...) {
+		for _, file := range files {
+			if configor.Config.Debug || configor.Config.Verbose {
+				fmt.Printf("Loading configurations from file '%v'...\n", file)
+			}
+			if err = processFile(config, file); err != nil {
 				return err
 			}
-			continue
-		}
-
-		fmt.Println(strings.Join(ntag, ".") + "." + fieldStruct.Name)
-
-		if field.Kind() == reflect.Slice {
-			for i := 0; i < field.Len(); i++ {
-				if reflect.Indirect(field.Index(i)).Kind() == reflect.Struct {
-					if err := configor.flagFromTag(field.Index(i).Addr().Interface(), append(ntag, fieldStruct.Name)); err != nil {
-						return err
-					}
-				}
-			}
-		}
-
-		// fmt.Println(strings.Join(ntag, "."))
-		if fieldStruct.Tag.Get("flag") == "" {
-			continue
-		}
-
-		configor.flagValue(flagSpec{
-			Type:        field.Type(),
-			Name:        strings.Join(ntag, "."),
-			ShortName:   strings.Split(fieldStruct.Tag.Get("flag"), "|")[0],
-			Default:     fieldStruct.Tag.Get("default"),
-			HelpMessage: strings.Split(fieldStruct.Tag.Get("flag"), "|")[1],
-			Required:    fieldStruct.Tag.Get("required") == "true",
-			Env:         fieldStruct.Tag.Get("env"),
-			Ptr:         field.Addr().Interface(),
-		})
-	}
-	return nil
-}
-
-func (configor *Configor) flagSet(config interface{}, files []string) {
-	optHelp := flag.Bool("h", false, "show this `help` message")
-	optFile := flag.String("c", "conf/config.json", "set configuration `file`")
-	configor.flagFromTag(config, []string{})
-	flag.Parse()
-	if *optHelp {
-		flag.Usage()
-		os.Exit(0)
-	}
-
-	if optFile != nil {
-		if len(files) > 0 {
-			files = strings.Split(*optFile, ",")
 		}
 	}
-}
 
-// Load will unmarshal configurations to struct from files that you provide
-func (configor *Configor) Load(config interface{}, files ...string) (err error) {
-	defer func() {
-
-		if configor.Config.Debug || configor.Config.Verbose {
-			fmt.Printf("Configuration:\n  %#v\n", config)
-		}
-	}()
-	configor.flagSet(config, files)
-	for _, file := range configor.getConfigurationFiles(files...) {
-		if configor.Config.Debug || configor.Config.Verbose {
-			fmt.Printf("Loading configurations from file '%v'...\n", file)
-		}
-		if err = processFile(config, file); err != nil {
-			return err
-		}
+	if createFlag {
+		configor.optHelp = flag.Bool("h", false, "show this `help` message")
+		//"conf/config.json"
+		configor.optFile = flag.String("c", strings.Join(files, ","), "set multiple configuration `file` \n            example:conf/config-main.json,conf/config-api.json")
+		configor.optVer = flag.Bool("v", false, "view `version` ")
 	}
 
 	prefix := configor.getENVPrefix(config)
 	if prefix == "-" {
-		return configor.processTags(config)
+		err = configor.processTags(createFlag, config, []string{})
 	}
-	return configor.processTags(config, prefix)
+	err = configor.processTags(createFlag, config, []string{}, prefix)
+
+	return err
+}
+
+// Load will unmarshal configurations to struct from files that you provide
+func (configor *Configor) Load(name string, version string, config interface{}, files ...string) (err error) {
+	if err = configor._Load(name, version, true, config, files...); err == nil {
+
+		// 改变默认的 Usage
+		//	flag.Usage = usage(name, version)
+		flag.Parse()
+		if *configor.optHelp {
+			///fmt.Println("hhhhhhhhhhhhhhhhhhhhhhhhhh")
+			flag.Usage()
+			os.Exit(0)
+		}
+		if *configor.optVer {
+			fmt.Println(name + " version: " + version + "  " + runtime.GOOS + "/" + runtime.GOARCH)
+			os.Exit(0)
+		}
+		//if configor.optFile != nil {
+		//	if *configor.optFile != strings.Join(files, ",") {
+		afiles := strings.Split(*configor.optFile, ",")
+		return configor._Load(name, version, false, config, afiles...)
+		//	}
+
+		//}
+
+		return
+	}
+
+	// defer func() {
+
+	// 	if configor.Config.Debug || configor.Config.Verbose {
+	// 		fmt.Printf("Configuration:\n  %#v\n", config)
+	// 	}
+	// }()
+	// //	configor.flagSet(config, files)
+	// for _, file := range configor.getConfigurationFiles(files...) {
+	// 	if configor.Config.Debug || configor.Config.Verbose {
+	// 		fmt.Printf("Loading configurations from file '%v'...\n", file)
+	// 	}
+	// 	if err = processFile(config, file); err != nil {
+	// 		return err
+	// 	}
+	// }
+
+	// prefix := configor.getENVPrefix(config)
+	// if prefix == "-" {
+	// 	return configor.processTags(config, []string{})
+	// }
+	// return configor.processTags(config, []string{}, prefix)
+	return
 }
 
 // ENV return environment
@@ -208,6 +206,11 @@ func ENV() string {
 }
 
 // Load will unmarshal configurations to struct from files that you provide
-func Load(config interface{}, files ...string) error {
-	return New(nil).Load(config, files...)
+func Load(name string, version string, config interface{}, files ...string) error {
+	return New(nil).Load(name, version, config, files...)
+}
+
+//根据tag获取默认结构数据
+func Default(config interface{}) (err error) {
+	return New(nil).Default(config)
 }

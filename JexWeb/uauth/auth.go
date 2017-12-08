@@ -26,7 +26,8 @@ type (
 		UseBuiltinUi bool //是否使用内置UI
 		Title        string
 		LoginTitle   string
-		MaxAge       int //seconds
+		MaxAge       int    //seconds
+		Domain       string //cookie Domain
 		Event        Events
 		Path         Paths
 	}
@@ -156,7 +157,7 @@ func Login(user interface{}, c echo.Context) {
 	sess := session.Default(c)
 	sess.Options(session.Options{
 		Path:     "",
-		Domain:   "",
+		Domain:   _config.Domain,
 		MaxAge:   _config.MaxAge,
 		HttpOnly: true,
 	})
@@ -176,7 +177,6 @@ func Logout(c echo.Context) {
 	sess := session.Default(c)
 	sess.Delete(_key)
 	sess.Save()
-	c.Redirect(302, "/")
 }
 
 func GetUAuthInfo(c echo.Context) *UAuthInfo {
@@ -217,7 +217,7 @@ func handle_Login(c echo.Context) error {
 			})
 		} else {
 			//错误消息
-			return c.String(500, "登录失败")
+			return c.String(500, err.Error())
 		}
 
 	}
@@ -237,6 +237,22 @@ func getNext(c echo.Context) string {
 }
 
 func handle_Logout(c echo.Context) error {
+	sing_out_str := strings.Replace(html_layout, "{{.yeld}}", html_logout, 1)
+	sing_out_str = strings.Replace(sing_out_str, "{{.sign_in}}", _config.Path.SignIN, 1)
+	sing_out_str = strings.Replace(sing_out_str, "{{.logintitle1}}", _config.Title, 1)
+	sing_out_str = strings.Replace(sing_out_str, "{{.logintitle2}}", _config.LoginTitle, 1)
+	sing_out_str = styleStr + html_script + sing_out_str
+	switch c.Request().Method {
+	case "GET":
+		return c.HTML(200, sing_out_str)
+	case "POST":
+		Logout(c)
+		return c.JSON(200, map[string]interface{}{
+			"status":   302,
+			"message":  "注销用户登录完成",
+			"location": "/",
+		})
+	}
 	return nil
 }
 

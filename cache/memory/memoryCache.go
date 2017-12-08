@@ -3,6 +3,7 @@ package memory
 import (
 	"container/list"
 	"fmt"
+	"strings"
 	"sync"
 	"time"
 
@@ -63,6 +64,17 @@ func (mc *MemoryCache) Delete(key string) error {
 		mc.items.Remove(e)
 	}
 	return nil
+}
+
+func (mc *MemoryCache) Keys(prefix ...string) []string {
+	slice := []string{}
+	for e := mc.items.Front(); e != nil; e = e.Next() {
+		key := e.Value.(cache.CacheItem).Key
+		if len(prefix) == 0 || strings.HasPrefix(key, prefix[0]) {
+			slice = append(slice, key)
+		}
+	}
+	return slice
 }
 
 func (mc *MemoryCache) find(key string) *list.Element {

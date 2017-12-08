@@ -50,6 +50,13 @@ func (rc *RedisCache) Count() int64 {
 	return rc.client.DBSize().Val()
 }
 
+func (rc *RedisCache) Keys(prefix ...string) []string {
+	if len(prefix) == 0 {
+		prefix = append(prefix, "*")
+	}
+	return rc.client.Keys(prefix[0]).Val()
+}
+
 func (rc *RedisCache) Clear() error {
 	return rc.client.FlushAllAsync().Err()
 }

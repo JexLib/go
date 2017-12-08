@@ -3,12 +3,16 @@ package jexweb
 import (
 	"fmt"
 	"html/template"
+	"image/color"
 	"reflect"
+
+	"github.com/JexLib/golang/configor"
 
 	"golang.org/x/crypto/acme/autocert"
 
 	"github.com/JexLib/golang/JexWeb/session"
 
+	"github.com/JexLib/golang/JexWeb/captcha"
 	"github.com/labstack/echo"
 	"github.com/labstack/echo/middleware"
 	"github.com/unrolled/render"
@@ -31,10 +35,16 @@ const (
 `
 )
 
+var (
+	//jxWeb = defaultJexWeb()
+	jwconfig Config
+)
+
 type (
 	JexWeb struct {
-		Config Config
-		Echo   *echo.Echo
+		Config            Config
+		Echo              *echo.Echo
+		captchaCodeServer *captcha.CaptchaServer
 		// Perm          *permissionbolt.Permissions
 		// _denyFunction echo.HandlerFunc
 		//controllers   map[string]iController
@@ -43,28 +53,37 @@ type (
 	// HandlerFunc func() error
 )
 
-func defConfig() Config {
-	return Config{
-		HttpPort:      8080,
-		AssetsDir:     "public/assets",
-		PublicDir:     "public",
-		TemplateDir:   "templates",
-		AppLayout:     "layout",
-		IsDevelopment: true,
-	}
+// func defConfig() Config {
+// 	return Config{
+// 		HttpPort:      8080,
+// 		AssetsDir:     "public/assets",
+// 		PublicDir:     "public",
+// 		TemplateDir:   "templates",
+// 		AppLayout:     "layout",
+// 		IsDevelopment: true,
+// 	}
+// }
+
+// func defaultJexWeb() *JexWeb {
+// 	defConf := Config{}
+// 	configor.Default(&defConf)
+// 	return NewWithConfig(defConf)
+// }
+
+func New(appname string, store ...session.Store) *JexWeb {
+	defConf := Config{}
+	configor.Default(&defConf)
+	return NewWithConfig(appname, defConf, store...)
 }
 
-func New(store ...session.Store) *JexWeb {
-	return NewWithConfig(defConfig(), store...)
-}
-
-func NewWithConfig(config Config, store ...session.Store) *JexWeb {
+func NewWithConfig(appname string, config Config, store ...session.Store) *JexWeb {
 	jwb := &JexWeb{
 		Config: config,
 		Echo:   echo.New(),
 		// _denyFunction: permissionDenied,
 		//	controllers:        make(map[string]iController),
 	}
+	jwconfig = config
 	jwb.Echo.Use(middleware.Recover())
 
 	// jwb.Echo.Use(middleware.Logger())
@@ -72,14 +91,52 @@ func NewWithConfig(config Config, store ...session.Store) *JexWeb {
 		Format: "method=${method}, uri=${uri}, status=${status}\n",
 	}))
 
-	if len(store) > 0 {
-		jwb.Echo.Use(session.Sessions("SESSID", store[0]))
+	if len(store) == 0 {
+		//默认使用CookieStore
+		st := session.NewCookieStore([]byte("jex-store"))
+		st.MaxAge(60 * 60 * 12)
+		store = append(store, st)
 	}
+	jwb.Echo.Use(session.Sessions(appname+"-SESSID", store[0]))
+	jwb.Echo.HTTPErrorHandler = JexHTTPErrorHandler
 	// jwb.Perm, _ = permissionbolt.NewWithConf("permdb")
 	// jwb.Perm.UserState().SetCookieTimeout(60 * 60)
 	// store := session.NewFileSystemStoreStore("store")
 	// jwb.Echo.Use(session.Sessions("SESSID", store))
 	return jwb
+}
+
+//开启验证码服务
+func (jwb *JexWeb) StartCaptchaCodeServer(cnf captcha.Config) error {
+	if cnf.Path == "" {
+		cnf.Path = "/captcha"
+	}
+	if cnf.CharCount == 0 {
+		cnf.CharCount = 4
+	}
+	if len(cnf.Background) == 0 {
+		cnf.Background = append(cnf.Background, color.White)
+	}
+	if len(cnf.CharColor) == 0 {
+		cnf.CharColor = append(cnf.CharColor, []color.Color{color.Black, color.RGBA{0, 153, 0, 255}, color.RGBA{255, 0, 0, 255}, color.RGBA{0, 0, 255, 255}}...)
+	}
+	if cnf.CharSize == 0.0 {
+		cnf.CharSize = 0.8
+	}
+	if cnf.ImgWidth == 0 {
+		cnf.ImgWidth = 158
+	}
+	if cnf.ImgHeight == 0 {
+		cnf.ImgHeight = 80
+	}
+
+	jwb.captchaCodeServer, _ = captcha.NewCaptchaServer(jwb.Echo, cnf)
+	return nil
+}
+
+//验证码验证
+func (jwb *JexWeb) ValidationCaptchaCode(c echo.Context, captchaCode string) bool {
+	return jwb.captchaCodeServer.Validation(c, captchaCode)
 }
 
 // func (jwb *JexWeb) UsePermissionMW(beforeMiddleware ...echo.MiddlewareFunc) {
@@ -284,7 +341,7 @@ func (jwb *JexWeb) Start() {
 		PrefixJSON:                []byte(""),
 		PrefixXML:                 []byte(""),
 		HTMLContentType:           "text/html",
-		IsDevelopment:             true,
+		IsDevelopment:             jwb.Config.IsDevelopment,
 		UnEscapeHTML:              false,
 		StreamingJSON:             false,
 		RequirePartials:           false,
@@ -298,14 +355,14 @@ func (jwb *JexWeb) Start() {
 	jwb.Echo.Static("public", jwb.Config.PublicDir)
 	jwb.Echo.HideBanner = true
 	fmt.Println(banner_jexweb)
-	if jwb.Config.Https.Enabled {
+	if jwb.Config.Https {
 		jwb.Echo.Pre(middleware.HTTPSRedirect())
 		jwb.Echo.AutoTLSManager.Cache = autocert.DirCache("./.cache")
-		address := fmt.Sprintf("%s:%d", jwb.Config.Addr, jwb.Config.Https.Port)
+		address := fmt.Sprintf("%s:%d", jwb.Config.Addr, jwb.Config.Port)
 		fmt.Println("Starting JexWeb listening at", address)
 		jwb.Echo.Logger.Fatal(jwb.Echo.StartAutoTLS(address))
 	} else {
-		address := fmt.Sprintf("%s:%d", jwb.Config.Addr, jwb.Config.HttpPort)
+		address := fmt.Sprintf("%s:%d", jwb.Config.Addr, jwb.Config.Port)
 		fmt.Println("Starting JexWeb listening at", address)
 		jwb.Echo.Logger.Fatal(jwb.Echo.Start(address))
 	}

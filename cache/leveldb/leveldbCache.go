@@ -81,6 +81,14 @@ func (rc *LevelDBCache) Delete(key string) error {
 	return rc.db.Delete([]byte(key), nil)
 }
 
+func (rc *LevelDBCache) Keys(prefix ...string) []string {
+	if len(prefix) == 0 {
+		prefix = append(prefix, "*")
+	}
+	return nil
+
+}
+
 func (rc *LevelDBCache) Count() int64 {
 	return 0
 }

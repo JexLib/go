@@ -1,18 +1,15 @@
 package jexweb
 
 type Config struct {
-	Addr  string `flag:"||http listening Address"`
-	Https struct {
-		Enabled bool `flag:"|false|Enabled   https"`
-		Port    int  `flag:"|443|https port"`
-	}
-	HttpPort      int    `flag:"|8080|http port"`
-	AssetsDir     string `flag:"|public/assets|website Assets storage path"`
-	PublicDir     string `flag:"|public|website Public storage path"`
-	TemplateDir   string `flag:"|templates|website Templates storage path"`
-	AppLayout     string `flag:"|layout|website global layout template"`
-	LoginPath     string `flag:"|/login|website login url"`
-	IsDevelopment bool   //调试模式
+	Addr          string `config:"||http listening Address"`
+	Port          int    `config:"|8080|http port"`
+	Https         bool   `config:"|false|Enabled https"`
+	AssetsDir     string `config:"|public/assets|website Assets storage path"`
+	PublicDir     string `config:"|public|website Public storage path"`
+	TemplateDir   string `config:"|templates|website Templates storage path"`
+	AppLayout     string `config:"|layout|website global layout template"`
+	LoginPath     string `config:"|/login|website login url"`
+	IsDevelopment bool   `config:"|true|Development  model"` //调试模式
 }
 
 // func newConfig(config ...map[string]interface{}) *Config {

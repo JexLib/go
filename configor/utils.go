@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"errors"
+	"flag"
 	"fmt"
 	"io/ioutil"
 	"os"
@@ -111,7 +112,11 @@ func getPrefixForStruct(prefixes []string, fieldStruct *reflect.StructField) []s
 	return append(prefixes, fieldStruct.Name)
 }
 
-func (configor *Configor) processTags(config interface{}, prefixes ...string) error {
+/**
+shortName|default|HelpMessage|env,required
+`config:"p|8080|Listen Port|PATH,required"`
+*/
+func (configor *Configor) processTags(createFlag bool, config interface{}, ntag []string, prefixes ...string) error {
 	configValue := reflect.Indirect(reflect.ValueOf(config))
 	if configValue.Kind() != reflect.Struct {
 		return errors.New("invalid config, should be struct")
@@ -120,21 +125,43 @@ func (configor *Configor) processTags(config interface{}, prefixes ...string) er
 	configType := configValue.Type()
 	for i := 0; i < configType.NumField(); i++ {
 		var (
-			envNames    []string
-			fieldStruct = configType.Field(i)
-			field       = configValue.Field(i)
-			envName     = fieldStruct.Tag.Get("env") // read configuration from shell env
+			envNames         []string
+			fieldStruct      = configType.Field(i)
+			field            = configValue.Field(i)
+			fieldTag         = fieldStruct.Tag.Get("config")
+			fieldRequired    = false
+			fieldShortName   = ""
+			fieldDefault     = ""
+			fieldHelpMessage = ""
+			fieldEnvName     = "" // read configuration from shell env
 		)
+
+		for _, v := range strings.Split(fieldTag, ",") {
+			switch v {
+			case "required":
+				fieldRequired = true
+			default:
+				tags := strings.Split(v, "|")
+				for len(tags) < 4 {
+					tags = append(tags, "")
+				}
+				fieldShortName = tags[0]
+				fieldDefault = tags[1]
+				fieldHelpMessage = tags[2]
+				fieldEnvName = tags[3]
+			}
+
+		}
 
 		if !field.CanAddr() || !field.CanInterface() {
 			continue
 		}
 
-		if envName == "" {
+		if fieldEnvName == "" {
 			envNames = append(envNames, strings.Join(append(prefixes, fieldStruct.Name), "_"))                  // Configor_DB_Name
 			envNames = append(envNames, strings.ToUpper(strings.Join(append(prefixes, fieldStruct.Name), "_"))) // CONFIGOR_DB_NAME
 		} else {
-			envNames = []string{envName}
+			envNames = []string{fieldEnvName}
 		}
 
 		if configor.Config.Verbose {
@@ -154,15 +181,15 @@ func (configor *Configor) processTags(config interface{}, prefixes ...string) er
 			}
 		}
 
-		if isBlank := reflect.DeepEqual(field.Interface(), reflect.Zero(field.Type()).Interface()); isBlank {
+		if isBlank := reflect.DeepEqual(field.Interface(), reflect.Zero(field.Type()).Interface()); !createFlag && isBlank {
 			// Set default configuration if blank
-			if value := fieldStruct.Tag.Get("default"); value != "" {
-				if err := yaml.Unmarshal([]byte(value), field.Addr().Interface()); err != nil {
+			if fieldDefault != "" {
+				if err := yaml.Unmarshal([]byte(fieldDefault), field.Addr().Interface()); err != nil {
 					return err
 				}
-			} else if fieldStruct.Tag.Get("required") == "true" {
+			} else if fieldRequired {
 				// return error if it is required but blank
-				return errors.New(fieldStruct.Name + " is required, but blank")
+				return errors.New(strings.Join(append(ntag, fieldStruct.Name), ".") + " is required, but blank")
 			}
 		}
 
@@ -172,7 +199,7 @@ func (configor *Configor) processTags(config interface{}, prefixes ...string) er
 
 		if field.Kind() == reflect.Struct {
 
-			if err := configor.processTags(field.Addr().Interface(), getPrefixForStruct(prefixes, &fieldStruct)...); err != nil {
+			if err := configor.processTags(createFlag, field.Addr().Interface(), append(ntag, fieldStruct.Name), getPrefixForStruct(prefixes, &fieldStruct)...); err != nil {
 				return err
 			}
 		}
@@ -180,14 +207,36 @@ func (configor *Configor) processTags(config interface{}, prefixes ...string) er
 		if field.Kind() == reflect.Slice {
 			for i := 0; i < field.Len(); i++ {
 				if reflect.Indirect(field.Index(i)).Kind() == reflect.Struct {
-					if err := configor.processTags(field.Index(i).Addr().Interface(), append(getPrefixForStruct(prefixes, &fieldStruct), fmt.Sprint(i))...); err != nil {
+					if err := configor.processTags(createFlag, field.Index(i).Addr().Interface(), append(ntag, fieldStruct.Name), append(getPrefixForStruct(prefixes, &fieldStruct), fmt.Sprint(i))...); err != nil {
 						return err
 					}
 				}
 			}
 		}
+
+		if createFlag && field.Kind() != reflect.Struct {
+			configor.flagValue(flagSpec{
+				Type:        field.Type(),
+				Name:        strings.Join(append(ntag, fieldStruct.Name), "."),
+				ShortName:   fieldShortName,
+				Default:     fieldDefault,
+				HelpMessage: fieldHelpMessage,
+				Required:    fieldRequired,
+				Env:         fieldEnvName,
+				Ptr:         field.Addr().Interface(),
+			})
+		}
 	}
 	return nil
+}
+
+func usage(name string, version string) {
+	fmt.Fprintf(os.Stderr, name+` version: `+version+`
+Usage: `+os.Args[0]+` [-hvVtTq] [-s signal] [-c filename] [-p prefix] [-g directives]
+
+Options:
+`)
+	flag.PrintDefaults()
 }
 
 func PrintJson(config interface{}) {

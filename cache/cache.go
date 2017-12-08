@@ -13,6 +13,7 @@ type Cache interface {
 	Delete(key string) error
 	Clear() error
 	Count() int64
+	Keys(prefix ...string) []string
 	SaveToFile(filename string) error
 	LoadFromFile(filename string) error
 }
