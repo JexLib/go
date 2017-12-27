@@ -70,7 +70,7 @@ func (cs *CaptchaServer) handle_Get(c echo.Context) error {
 	sess := session.Default(c)
 	sess.Set("@Captcha", str)
 	if err := sess.Save(); err != nil {
-		fmt.Println("session wait Failure:", err)
+		fmt.Println("session  write Failure:", err)
 	}
 	return png.Encode(c.Response().Writer, img)
 }
