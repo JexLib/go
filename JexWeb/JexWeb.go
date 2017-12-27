@@ -84,12 +84,12 @@ func NewWithConfig(appname string, config Config, store ...session.Store) *JexWe
 		//	controllers:        make(map[string]iController),
 	}
 	jwconfig = config
-	jwb.Echo.Use(middleware.Recover())
 
 	// jwb.Echo.Use(middleware.Logger())
 	jwb.Echo.Use(middleware.LoggerWithConfig(middleware.LoggerConfig{
-		Format: "method=${method}, uri=${uri}, status=${status}\n",
+		Format: "${time_rfc3339_nano}▶${method}|${status}|${uri}\n",
 	}))
+	jwb.Echo.Use(middleware.Recover())
 
 	if len(store) == 0 {
 		//默认使用CookieStore

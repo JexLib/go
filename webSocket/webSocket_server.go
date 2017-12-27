@@ -3,6 +3,7 @@ package webSocket
 import (
 	"net/http"
 
+	"github.com/google/uuid"
 	"github.com/gorilla/websocket"
 )
 
@@ -43,7 +44,7 @@ type WSService struct {
 	Hub      *Hub
 }
 
-type OnClientEvent func(clientid interface{})
+type OnClientEvent func(client *Client)
 
 func NewWSService() *WSService {
 
@@ -63,11 +64,11 @@ func NewWSService() *WSService {
 }
 
 func (ws *WSService) SetClientRegeditEvent(onClientEvent OnClientEvent) {
-	ws.Hub.onClientRegeditEvent = onClientEvent
+	ws.Hub.onClientRegedit = onClientEvent
 }
 
 func (ws *WSService) SetClientUnRegeditEvent(onClientEvent OnClientEvent) {
-	ws.Hub.onClientUnRegeditEvent = onClientEvent
+	ws.Hub.onClientUnRegedit = onClientEvent
 }
 
 func (ws *WSService) HandlerHTTP(writer http.ResponseWriter, request *http.Request, clientid ...interface{}) error {
@@ -76,9 +77,9 @@ func (ws *WSService) HandlerHTTP(writer http.ResponseWriter, request *http.Reque
 		return err
 	}
 
-	client := &Client{hub: ws.Hub, conn: conn, send: make(chan []byte, 256)}
+	client := &Client{hub: ws.Hub, conn: conn, send: make(chan []byte, 256), UUID: uuid.New()}
 	if len(clientid) > 0 {
-		client.id = clientid[0]
+		client.ID = clientid[0]
 	}
 	client.hub.register <- client
 
@@ -88,6 +89,7 @@ func (ws *WSService) HandlerHTTP(writer http.ResponseWriter, request *http.Reque
 	go client.readPump()
 	// clientid := c.Param("timestamp")
 	// SSEngine.HandlerHTTP(clientid, c.Response().Writer, c.Request())
+
 	return nil
 }
 

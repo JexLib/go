@@ -5,6 +5,7 @@ import (
 	"log"
 	"time"
 
+	"github.com/google/uuid"
 	"github.com/gorilla/websocket"
 )
 
@@ -37,8 +38,11 @@ type Client struct {
 	// Buffered channel of outbound messages.
 	send chan []byte
 
-	//自定义唯一clientid
-	id interface{}
+	//自定义clientid
+	ID interface{}
+
+	//唯一id
+	UUID uuid.UUID
 }
 
 // readPump pumps messages from the websocket connection to the hub.
@@ -111,4 +115,13 @@ func (c *Client) writePump() {
 			}
 		}
 	}
+}
+
+func (c *Client) SendMsg(msg []byte) {
+	select {
+	case c.send <- msg:
+	default:
+		close(c.send)
+	}
+
 }

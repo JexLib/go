@@ -49,7 +49,7 @@ func (c *JexContext) Init() {
 }
 
 func (c *JexContext) SetLayout(layout string) {
-
+	c.Context.Set("Layout", layout)
 }
 
 func (c *JexContext) Set(key string, val interface{}) {

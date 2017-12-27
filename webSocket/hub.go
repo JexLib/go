@@ -19,8 +19,8 @@ type Hub struct {
 	// Unregister requests from clients.
 	unregister chan *Client
 
-	onClientRegeditEvent   OnClientEvent
-	onClientUnRegeditEvent OnClientEvent
+	onClientRegedit   OnClientEvent
+	onClientUnRegedit OnClientEvent
 }
 
 type jexWsocketBroadcast struct {
@@ -39,7 +39,7 @@ func newHub() *Hub {
 
 func (h *Hub) IsExistsClient(id interface{}) bool {
 	for client := range h.clients {
-		if client.id == id {
+		if client.ID == id {
 			return true
 		}
 	}
@@ -67,21 +67,21 @@ func (h *Hub) run() {
 		select {
 		case client := <-h.register:
 			h.clients[client] = true
-			if h.onClientRegeditEvent != nil {
-				go h.onClientRegeditEvent(client.id)
+			if h.onClientRegedit != nil {
+				go h.onClientRegedit(client)
 			}
 		case client := <-h.unregister:
 			if _, ok := h.clients[client]; ok {
 				delete(h.clients, client)
 				close(client.send)
 
-				if h.onClientUnRegeditEvent != nil {
-					go h.onClientUnRegeditEvent(client.id)
+				if h.onClientUnRegedit != nil {
+					go h.onClientUnRegedit(client)
 				}
 			}
 		case message := <-h.broadcast:
 			for client := range h.clients {
-				if h.haveclient(client.id, message.clients) {
+				if h.haveclient(client.ID, message.clients) {
 					select {
 					case client.send <- message.msg:
 					default:

@@ -8,6 +8,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/JexLib/golang/JexWeb/captcha"
 	"github.com/JexLib/golang/JexWeb/session"
 	"github.com/labstack/echo"
 )
@@ -23,6 +24,7 @@ type (
 	OnChangePasswordEvent func(account, password, newpassword string) error
 
 	Config struct {
+		//Skipper      middleware.Skipper
 		UseBuiltinUi bool //是否使用内置UI
 		Title        string
 		LoginTitle   string
@@ -66,8 +68,9 @@ type (
 )
 
 var (
-	_config *Config
-	_key    = "auth_info"
+	_config            *Config
+	_key               = "auth_info"
+	_CaptchaCodeServer *captcha.CaptchaServer
 )
 
 // type testuser struct {
@@ -98,7 +101,7 @@ func UAuthMiddleware(e *echo.Echo, config ...Config) echo.MiddlewareFunc {
 		fmt.Println("must have OnUserAuthEvent and OnLoginEvent,OnRegister,OnChangePassword func. ")
 		os.Exit(0)
 	}
-
+	//_CaptchaCodeServer = captcha.NewCaptchaServer(e, "/captcha", 4, "public/assets/fonts/comic.ttf", "public/assets/fonts/D3Parallelism.ttf")
 	_config = &config[0]
 	mfunc := func(next echo.HandlerFunc) echo.HandlerFunc {
 
@@ -134,6 +137,10 @@ func UAuthMiddleware(e *echo.Echo, config ...Config) echo.MiddlewareFunc {
 //验证session信息
 func verifySession(cnf Config, c echo.Context) bool {
 	sess := session.Default(c)
+	s := sess.Get(_key)
+	if s == nil {
+		return false
+	}
 	if str, ok := sess.Get(_key).(string); ok {
 		if storeinfo, err := storeinfoDecode(str); err == nil {
 			if cnf.Event.OnUserAuth != nil {
@@ -203,9 +210,13 @@ func handle_Login(c echo.Context) error {
 	case "POST":
 		account := c.FormValue("user")
 		passwd := c.FormValue("paswd")
-
+		captchaCode := c.FormValue("_rucaptcha")
 		if strings.Trim(account, "") == "" || strings.Trim(passwd, "") == "" {
 			return c.String(500, "登录失败,用户名、密码不允许为空！")
+		}
+
+		if !_CaptchaCodeServer.Validation(c, captchaCode) {
+			return c.String(500, "验证码错误，请重新输入！")
 		}
 		if user, err := _config.Event.OnLogin(account, passwd); err == nil {
 			Login(user, c)
@@ -237,11 +248,8 @@ func getNext(c echo.Context) string {
 }
 
 func handle_Logout(c echo.Context) error {
-	sing_out_str := strings.Replace(html_layout, "{{.yeld}}", html_logout, 1)
-	sing_out_str = strings.Replace(sing_out_str, "{{.sign_in}}", _config.Path.SignIN, 1)
-	sing_out_str = strings.Replace(sing_out_str, "{{.logintitle1}}", _config.Title, 1)
-	sing_out_str = strings.Replace(sing_out_str, "{{.logintitle2}}", _config.LoginTitle, 1)
-	sing_out_str = styleStr + html_script + sing_out_str
+
+	sing_out_str := html_script + html_logout
 	switch c.Request().Method {
 	case "GET":
 		return c.HTML(200, sing_out_str)
@@ -271,6 +279,7 @@ func handle_Register(c echo.Context) error {
 		account := c.FormValue("user")
 		passwd := c.FormValue("paswd")
 		passwd1 := c.FormValue("paswd1")
+		captchaCode := c.FormValue("_rucaptcha")
 		if strings.Trim(account, "") == "" || strings.Trim(passwd, "") == "" || strings.Trim(passwd1, "") == "" {
 			return c.String(500, "用户名、密码不允许为空！")
 		}
@@ -281,7 +290,9 @@ func handle_Register(c echo.Context) error {
 		if len(passwd) < 8 {
 			return c.String(500, "密码必须是8位长度的数字或字符串！")
 		}
-
+		if !_CaptchaCodeServer.Validation(c, captchaCode) {
+			return c.String(500, "验证码错误，请重新输入！")
+		}
 		if err := _config.Event.OnRegister(account, passwd); err == nil {
 			Logout(c)
 			return c.JSON(200, map[string]interface{}{

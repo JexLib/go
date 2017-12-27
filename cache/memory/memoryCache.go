@@ -2,7 +2,6 @@ package memory
 
 import (
 	"container/list"
-	"fmt"
 	"strings"
 	"sync"
 	"time"
@@ -46,7 +45,6 @@ func (mc *MemoryCache) Set(key string, value interface{}, expiration ...time.Dur
 	} else {
 		mc.items.PushBack(*item)
 	}
-	fmt.Println("set:", *item)
 	return nil
 }
 
