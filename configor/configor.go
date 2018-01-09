@@ -154,11 +154,12 @@ func (configor *Configor) Load(name string, version string, config interface{}, 
 	if err = configor._Load(name, version, true, config, files...); err == nil {
 
 		// 改变默认的 Usage
-		//	flag.Usage = usage(name, version)
+		flag.Usage = configor.flagUsage
 		flag.Parse()
 		if *configor.optHelp {
 			///fmt.Println("hhhhhhhhhhhhhhhhhhhhhhhhhh")
 			flag.Usage()
+
 			os.Exit(0)
 		}
 		if *configor.optVer {

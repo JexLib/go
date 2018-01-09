@@ -230,13 +230,54 @@ func (configor *Configor) processTags(createFlag bool, config interface{}, ntag 
 	return nil
 }
 
-func usage(name string, version string) {
-	fmt.Fprintf(os.Stderr, name+` version: `+version+`
-Usage: `+os.Args[0]+` [-hvVtTq] [-s signal] [-c filename] [-p prefix] [-g directives]
+// func usage(name string, version string) {
+// 	fmt.Fprintf(os.Stderr, name+` version: `+version+`
+// Usage: `+os.Args[0]+` [-hvVtTq] [-s signal] [-c filename] [-p prefix] [-g directives]
 
-Options:
-`)
-	flag.PrintDefaults()
+// Options:
+// `)
+// 	flag.PrintDefaults()
+// }
+
+func (configor *Configor) flagUsage() {
+
+	fmt.Println("Usage:")
+	fmt.Println(" ", os.Args[0], "[OPTIONS]\n")
+	fmt.Println("Application Options:")
+	fmt.Println(" ", "-C, --configfile=       Path to configuration file (/root/.stakepoold/stakepoold.conf")
+	fmt.Println(" ", "-V, --version           Display version information and exit")
+	fmt.Println()
+	fmt.Println("Help Options:")
+	fmt.Println(" ", "-h, --help              Show this help message")
+	f := flag.CommandLine
+
+	f.VisitAll(func(flag *flag.Flag) {
+		s := fmt.Sprintf("  -%s", flag) // Two spaces before -; see next two comments.
+		fmt.Println(s)
+		// name, usage := flag.UnquoteUsage(flag)
+		// if len(name) > 0 {
+		// 	s += " " + name
+		// }
+		// // Boolean flags of one ASCII letter are so common we
+		// // treat them specially, putting their usage on the same line.
+		// if len(s) <= 4 { // space, space, '-', 'x'.
+		// 	s += "\t"
+		// } else {
+		// 	// Four spaces before the tab triggers good alignment
+		// 	// for both 4- and 8-space tab stops.
+		// 	s += "\n    \t"
+		// }
+		// s += usage
+		// if !flag.isZeroValue(flag, flag.DefValue) {
+		// 	if _, ok := flag.Value.(*stringValue); ok {
+		// 		// put quotes on the value
+		// 		s += fmt.Sprintf(" (default %q)", flag.DefValue)
+		// 	} else {
+		// 		s += fmt.Sprintf(" (default %v)", flag.DefValue)
+		// 	}
+		// }
+		// fmt.Fprint(f.out(), s, "\n")
+	})
 }
 
 func PrintJson(config interface{}) {

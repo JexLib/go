@@ -38,14 +38,22 @@ func NewMySQL(debug bool, conf Config) *gorm.DB {
 	mDB, err := gorm.Open("mysql", mysqlStr)
 
 	if err != nil {
-		panic("failed to connect databas e")
+		fmt.Println(err)
+		panic("failed to connect database")
+	}
+
+	autoCreateDataBase(mDB, conf.DataBase)
+	mysqlStr = fmt.Sprintf("%s:%s@tcp(%s)/%s?charset=utf8&parseTime=True&loc=Local", conf.User, conf.Password, conf.Address, conf.DataBase)
+	mDB, err = gorm.Open("mysql", mysqlStr)
+
+	if err != nil {
+		fmt.Println(err)
+		panic("failed to connect database")
 	}
 
 	if debug {
 		mDB = mDB.Debug()
 	}
-
-	autoCreateDataBase(mDB, conf.DataBase)
 	// //	defer db.Close()
 	// DB.SetMaxIdleConns(10)
 	mDB.DB().SetMaxOpenConns(100)

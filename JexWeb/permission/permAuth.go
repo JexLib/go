@@ -10,6 +10,7 @@ import (
 
 	"github.com/JexLib/golang/cache"
 	"github.com/JexLib/golang/cache/memory"
+	"github.com/JexLib/golang/configor"
 
 	"github.com/labstack/echo"
 	"golang.org/x/oauth2"
@@ -32,32 +33,32 @@ type (
 )
 
 type Config struct {
-	Title      string
-	Subtitle   string
+	Title      string `config:"|JEX|Main Title|"`
+	Subtitle   string `config:"|Permission|Sub Title|"`
 	Path       AuthPath
 	LocalAuth  LocalLoginAuth  //本地登录验证
 	Oauth2Auth Oauth2LoginAuth //Oauth2登录验证
 	PermFilter PermFilter      //权限过滤条件
-	Cookie     CookieConfig
-	Cache      cache.Cache //加速并发缓存，默认使用内存缓存
+	// Cookie     CookieConfig
+	Cache cache.Cache //加速并发缓存，默认使用内存缓存
 }
 
-type CookieConfig struct {
-	MaxAge int    //seconds
-	Domain string //cookie Domain
-}
+// type CookieConfig struct {
+// 	MaxAge int    //seconds
+// 	Domain string //cookie Domain
+// }
 
 type AuthPath struct {
-	Login       string
-	Logout      string
-	ChangePWD   string
-	Register    string
-	CaptchaCode string //验证码获取地址
+	Login       string `config:"|/login|登陆路由|"`
+	Logout      string `config:"|/logout|注销路由|"`
+	ChangePWD   string `config:"|/changepwd|修改密码路由|"`
+	Register    string `config:"|/register|注册用户路由|"`
+	CaptchaCode string `config:"|/captcha|验证码路由|"` //验证码获取地址
 }
 
 //本地登录验证
 type LocalLoginAuth struct {
-	AutoPage         bool                  //使用本中间件自动创建页面
+	AutoPage         bool                  `config:"|true|使用本中间件自动创建页面|"` //使用本中间件自动创建页面
 	OnLoginBefore    OnLoginEvent          //登录前回调
 	OnRegister       OnRegisterEvent       //注册处理
 	OnChangePassword OnChangePasswordEvent //修改密码处理
@@ -96,26 +97,26 @@ var (
 // 	conf Config
 // }
 
-func defConfig() Config {
-	return Config{
-		Title:    "JEX",
-		Subtitle: "Permission",
-		Path: AuthPath{
-			Login:     "/login",
-			Logout:    "/logout",
-			ChangePWD: "/changepwd",
-			Register:  "/register",
-		},
-		LocalAuth: LocalLoginAuth{
-			AutoPage: true,
-		},
-		Oauth2Auth: Oauth2LoginAuth{
-			PathCallback: "/oauth2callback",
-			PathError:    "/oauth2error",
-		},
-		Cache: memory.NewMemoryCache(time.Minute * 60),
-	}
-}
+// func defConfig() Config {
+// 	return Config{
+// 		Title:    "JEX",
+// 		Subtitle: "Permission",
+// 		Path: AuthPath{
+// 			Login:     "/login",
+// 			Logout:    "/logout",
+// 			ChangePWD: "/changepwd",
+// 			Register:  "/register",
+// 		},
+// 		LocalAuth: LocalLoginAuth{
+// 			AutoPage: true,
+// 		},
+// 		Oauth2Auth: Oauth2LoginAuth{
+// 			PathCallback: "/oauth2callback",
+// 			PathError:    "/oauth2error",
+// 		},
+// 		Cache: memory.NewMemoryCache(time.Minute * 60),
+// 	}
+// }
 
 // func NewPermissionAuth(config ...Config) *PermissionAuth {
 // 	if len(config) == 0 {
@@ -128,9 +129,13 @@ func defConfig() Config {
 
 func Permission(config ...Config) echo.MiddlewareFunc {
 	if len(config) == 0 {
-		config = append(config, defConfig())
+		config = append(config, Config{})
 	}
 	_config = &config[0]
+	configor.Default(_config)
+	if _config.Cache == nil {
+		_config.Cache = memory.NewMemoryCache(time.Hour * 48)
+	}
 	newUsers(_config.Cache)
 	// Oauth2AuthMiddlewares := make(map[string]echo.MiddlewareFunc)
 	// if len(config[0].Oauth2Auth.Clients) > 0 {
@@ -155,6 +160,8 @@ func Permission(config ...Config) echo.MiddlewareFunc {
 					return handle_Register(c)
 				case config[0].Path.ChangePWD:
 					return handle_ChangePwd(c)
+				case config[0].Path.CaptchaCode:
+					return next(c)
 				}
 			}
 
@@ -284,6 +291,7 @@ func handle_Login(c echo.Context) error {
 		if strings.Trim(account, "") == "" || strings.Trim(passwd, "") == "" || strings.Trim(captchaCode, "") == "" {
 			return c.String(500, "登录失败,用户名、密码、验证码不允许为空！")
 		}
+
 		if !_config.LocalAuth.OnCaptchaCode(c, captchaCode) {
 			return c.JSON(500, map[string]interface{}{
 				"status":  "E-CaptchaCode",

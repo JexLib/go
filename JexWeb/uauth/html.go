@@ -178,6 +178,12 @@ function ajxformSubmit(id) {
 					 <input placeholder="密码" name="paswd" class="form-control" type="password"  required="required">
 				 </div>
 			 </div>
+			 <div class="form-group input-group">
+			    <input class="form-control" style="border-right-width:0px" placeholder="请输入右边验证码" name="_rucaptcha" autocorrect="off" autocapitalize="off" pattern="[0-9a-z]*" maxlength="4" autocomplete="off" type="text">
+			    <span class="input-group-addon captcha" style="padding: 0px;background-color: transparent;  box-sizing: inherit;">
+				  <img alt="验证码" height="30px" src="/captcha" title="看不清可点击刷新验证码" style="cursor:pointer;"
+					onclick="this.src='/captcha?d='+Math.random();"></span>
+		     </div>
 			 <br>
 			 <div class="form-group">
 				
@@ -191,6 +197,7 @@ function ajxformSubmit(id) {
 		 </form>
 		 <button type="btn" onclick="ajxformSubmit('.login-form');"  class="blue-button width-100">登陆</button>
 		 <p>还没有注册用户吗？ <strong><a href="{{.sign_up}}">现在注册！</a></strong></p>
+
 `
 
 	html_sing_up = `
@@ -247,7 +254,85 @@ function ajxformSubmit(id) {
 </div>
 <br>
 </form>
-<button type="btn" onclick="ajxformSubmit('.login-form');" class="blue-button width-100">修改密码</button>
+<button type="button" onclick="ajxformSubmit('.login-form');" class="blue-button width-100">修改密码</button>
 <p>放弃修改密码 ，返回 <strong><a href="/">主页</a></strong></p>
+`
+
+	html_logout = `
+	<!DOCTYPE html>
+	<html>
+	<style>
+		.bg {
+			min-height: 100%;
+			background: rgb(24, 26, 26);
+			text-align: center;
+			font-size: 14px;
+		}
+		
+		.box {
+			margin: 0 auto;
+			max-width: 500px;
+			padding-top: 30px;
+			background: #ffffff;
+			border-radius: 10px;
+			position: relative;
+			margin-top: 10%;
+			box-shadow: 0px 0px 1px 1px rgba(161, 159, 159, 0.1);
+		}
+
+		.alert_info {
+			background-color: rgba(0, 137, 204, 0.85);
+			color: #fff;
+			font-size: 18px;
+			height: 0;
+			left: 0;
+			line-height: 50px;
+			opacity: 0;
+			overflow: hidden;
+			position: fixed;
+			text-align: center;
+			top: 0;
+			transition: all 0.3s ease-in-out 0s;
+			width: 100%;
+			z-index: 22222;
+		}
+		
+		.alert_info.in {
+			height: 49px;
+			opacity: 1;
+		}
+		
+		.alert_info.error {
+			background-color: rgba(162, 6, 19, 0.85);
+		}
+		
+		.alert_info.success {
+			background-color: rgba(6, 162, 45, 0.85);
+		}
+	</style>
+ 
+	<head>
+		<meta charset="UTF-8">
+	
+	</head>
+	<link href=" https://cdn.bootcss.com/bootstrap/3.3.7/css/bootstrap.min.css" rel="stylesheet">
+	<script src="https://cdn.bootcss.com/jquery/1.12.4/jquery.min.js"></script>
+	<script src="https://cdn.bootcss.com/bootstrap/3.3.7/js/bootstrap.min.js"></script>
+	<script src="http://malsup.github.com/min/jquery.form.min.js"></script>
+	
+	<body class="bg">
+	<form class="lform box" method="post">
+	     <p>注销后，访问权限将受到限制&hellip;
+				<p>
+					<strong>确认注销登录？</p> 
+					<div class="modal-footer">
+					  <button type="button"  onclick="javascript :history.back(-1)" class="btn btn-default">取消</button>
+					  <button type="button" onclick="ajxformSubmit('.lform');" class="btn btn-warning">确认</button>
+					</div> 
+	 
+	 <form>
+	 </body>
+	 
+	 </html>
 `
 )
